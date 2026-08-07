@@ -1,0 +1,18 @@
+# 个人持仓（含敏感数据，切勿提交）
+positions.json
+
+# WorkBuddy 运行时目录
+.workbuddy/
+
+# 本地环境与密钥
+.env
+*.local
+secrets.*
+
+# 日志
+*.log
+
+# 操作系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.swp
