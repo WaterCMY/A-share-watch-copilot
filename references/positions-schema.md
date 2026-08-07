@@ -7,7 +7,7 @@
 ```json
 {
   "updated": "2026-08-06",
-  "account": "300201****xx",
+  "account": "600888****xx",
   "positions": [ { ... }, { ... } ],
   "watchlist": [ { ... } ]
 }
@@ -62,9 +62,9 @@
 
 ```json
 "replenish_plan": [
-  { "trigger": 1.10, "shares": 2000, "note": "前低支撑上沿，底仓翻倍" },
-  { "trigger": 1.05, "shares": 2000, "note": "7/20-30 低点下方" },
-  { "trigger": 1.005, "shares": 2000, "note": "BOLL下轨，深跌补" }
+  { "trigger": 2.80, "shares": 5000, "note": "前低支撑上沿，底仓翻倍" },
+  { "trigger": 2.70, "shares": 5000, "note": "前期平台低点下方" },
+  { "trigger": 2.60, "shares": 5000, "note": "BOLL下轨，深跌补" }
 ]
 ```
 原则：**不追高，只等回踩**；每档价位 + 股数提前定好，触发即执行。

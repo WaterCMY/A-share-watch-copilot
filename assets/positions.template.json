@@ -1,7 +1,7 @@
 {
   "_note": "持仓档案模板（以下为示例数据，非真实持仓）。复制本文件为 positions.json，把示例替换为你的真实持仓。字段规范见 references/positions-schema.md。current_price / pnl 等每日收盘后更新；stop_loss / take_profit 设定方法见 schema 文档。",
   "updated": "YYYY-MM-DD",
-  "account": "300201****xx",
+  "account": "600888****xx",
   "positions": [
     {
       "code": "510300",
@@ -69,15 +69,15 @@
       "strategy": "卫星仓",
       "user_intent": "战术性卫星仓，反弹兑现不恋战",
       "strategy_note": "示例：行业ETF卫星仓，注意主力资金流向",
-      "stop_loss": 1.100,
-      "stop_loss_pct": -8.3,
+      "stop_loss": 1.050,
+      "stop_loss_pct": -12.5,
       "stop_loss_basis": "破则反弹结构坏",
       "take_profit": 1.350,
       "take_profit_pct": 12.5,
       "take_profit_basis": "解套墙（平均成本+前高）",
       "take_profit_status": "active",
       "replenish_plan": [],
-      "suggestion": "1.30-1.32减1/3，1.35-1.38清，止损1.10"
+      "suggestion": "1.30-1.32减1/3，1.35-1.38清，止损1.05"
     }
   ],
   "watchlist": [
