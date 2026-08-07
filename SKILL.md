@@ -58,6 +58,12 @@ display_name: "盯盘副驾"
 ### 4. 数据源与坑点
 - 选型与限制见 `references/data-sources.md`（westock-mcp 断连、market_overview 滞后、北向/两融限制、批量 kline 单股报错等）
 
+### 5. 本地工作台（可选）
+- 一个纯前端的单页看盘工作台（`workbench.example.html`）+ 本地代理（`workbench-server.py`），用于实时看盘与持仓管理，**与 agent 对话互补**：agent 负责定时推送与深度分析，工作台负责实时行情与快捷操作。
+- 能力：实时行情（60s 刷新）、持仓表格（表头排序）、K线/分时/周K弹窗（MA5/10/20/120/250 + 量能）、手动录入仓位、卖出减仓（核算已实现盈亏）、调整成本价/股数、一键同步回 `positions.json`。
+- 架构与搭建步骤见 `references/workbench-guide.md`；示例代码（脱敏）见 `assets/workbench.example.html` 与 `assets/workbench-server.py`。
+- **合规**：工作台仅为个人信息整理工具，不含投顾逻辑、不自动下单；示例代码中所有持仓均为虚构数据。
+
 ## 风控与合规铁律
 
 1. **人在回路**：所有信息展示仅供参考，agent 绝不自动下单
@@ -74,4 +80,7 @@ display_name: "盯盘副驾"
 | `references/automation-templates.md` | 8 个自动化任务 prompt + rrule |
 | `references/data-sources.md` | 数据源选型与踩坑经验 |
 | `references/report-templates.md` | 盘前/盘后/午间/信息整理报告结构 |
+| `references/workbench-guide.md` | 本地工作台架构、能力与搭建步骤 |
 | `assets/positions.template.json` | 持仓文件模板（可直接复制改） |
+| `assets/workbench.example.html` | 本地工作台前端示例（脱敏，虚构持仓） |
+| `assets/workbench-server.py` | 本地工作台代理服务示例 |

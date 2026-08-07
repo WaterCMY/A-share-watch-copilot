@@ -1,6 +1,10 @@
 # 个人持仓（含敏感数据，切勿提交）
 positions.json
 
+# 个人实盘版工作台（含真实持仓，防止误提交；不影响 assets/ 下脱敏示例）
+/workbench.html
+/workbench-server.py
+
 # WorkBuddy 运行时目录
 .workbuddy/
 
@@ -16,3 +20,7 @@ secrets.*
 .DS_Store
 Thumbs.db
 *.swp
+
+# Python 缓存
+__pycache__/
+*.pyc

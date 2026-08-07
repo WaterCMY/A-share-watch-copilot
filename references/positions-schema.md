@@ -1,13 +1,13 @@
 # 持仓档案 Schema（positions.json）
 
-持仓档案是盯盘 agent 的"单一事实源"。所有报告、监控、建议都从这里读取。用户手动维护，agent 辅助计算与更新。
+持仓档案是盯盘 agent 的"单一事实源"。所有报告、监控、信息整理都从这里读取。用户手动维护，agent 辅助计算与更新。
 
 ## 顶层结构
 
 ```json
 {
   "updated": "2026-08-06",
-  "account": "600888****xx",
+  "account": "YOUR_ACCOUNT****xx",
   "positions": [ { ... }, { ... } ],
   "watchlist": [ { ... } ]
 }
@@ -42,7 +42,7 @@
 | `take_profit_status` | str | | `active` / `cancelled`（长持不设压力位时标 cancelled） |
 | `replenish_plan` | list | | 价格提醒计划（见下），仅区间提醒标的用 |
 | `tech` | obj | | 最近技术快照：boll/macd/kdj/rsi_6 |
-| `suggestion` | str | | 当前给用户的行动建议 |
+| `note` | str | | 个人备注（信息整理记录，非操作指令） |
 
 ## 策略标签（strategy 取值）
 
@@ -62,9 +62,9 @@
 
 ```json
 "replenish_plan": [
-  { "trigger": 2.80, "shares": 5000, "note": "前低支撑上沿，底仓翻倍" },
+  { "trigger": 2.80, "shares": 5000, "note": "前低支撑上沿" },
   { "trigger": 2.70, "shares": 5000, "note": "前期平台低点下方" },
-  { "trigger": 2.60, "shares": 5000, "note": "BOLL下轨，深跌补" }
+  { "trigger": 2.60, "shares": 5000, "note": "BOLL下轨附近" }
 ]
 ```
 原则：**不追高，只等价格回落**；每档价位 + 股数提前定好，触发即执行。
@@ -95,6 +95,6 @@
   "stop_loss_basis": "前期低点下方，BOLL下轨上方",
   "take_profit": 4.30,
   "take_profit_status": "cancelled",
-  "suggestion": "长持标的，已取消压力位提醒；仅跌破支撑3.80再评估"
+  "note": "长持标的，已取消压力位提醒；关注3.80支撑位是否破位"
 }
 ```
