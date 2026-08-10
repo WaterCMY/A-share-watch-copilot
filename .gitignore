@@ -1,9 +1,16 @@
 # 个人持仓（含敏感数据，切勿提交）
 positions.json
 
+# 个人场外基金持仓（养鸡场，含敏感数据，切勿提交；不影响 assets/funds.template.json）
+funds.json
+
 # 个人实盘版工作台（含真实持仓，防止误提交；不影响 assets/ 下脱敏示例）
 /workbench.html
 /workbench-server.py
+
+# 手动录入导出件（可能含真实持仓）
+manual_positions.json
+manual_funds.json
 
 # WorkBuddy 运行时目录
 .workbuddy/

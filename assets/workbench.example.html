@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>盯盘工作台 · Workbench</title>
+<!-- 示例版：所有持仓/基金数据均为虚构演示数据，非真实投资组合。本工具仅用于信息整理与展示，不构成任何投资建议。 -->
 <style>
 :root{
   --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --border:#2a3140;
@@ -85,6 +86,31 @@ th.sortable:hover{color:var(--text)}
 th.sortable.act{color:var(--text)}
 th .arr{display:inline-block;width:10px;margin-left:3px;font-size:10px;color:var(--accent);opacity:0}
 th.sortable.act .arr{opacity:1}
+th.fsort{cursor:pointer;user-select:none;transition:color .15s}
+th.fsort:hover{color:var(--text)}
+th.fsort.act{color:var(--text)}
+th.fsort.act .arr{opacity:1}
+#fundTable th:nth-child(1),#fundTable td:nth-child(1){width:20%;text-align:left}
+#fundTable th:nth-child(2),#fundTable td:nth-child(2){width:9%}
+#fundTable th:nth-child(3),#fundTable td:nth-child(3){width:10%}
+#fundTable th:nth-child(4),#fundTable td:nth-child(4){width:9%}
+#fundTable th:nth-child(5),#fundTable td:nth-child(5){width:11%}
+#fundTable th:nth-child(6),#fundTable td:nth-child(6){width:10%}
+#fundTable th:nth-child(7),#fundTable td:nth-child(7){width:11%}
+#fundTable th:nth-child(8),#fundTable td:nth-child(8){width:10%}
+#fundTable th:nth-child(9),#fundTable td:nth-child(9){width:10%;white-space:normal;text-align:left}
+#fundTable th:nth-child(10),#fundTable td:nth-child(10){width:12%;white-space:normal;text-align:left}
+#fundTable th:nth-child(11),#fundTable td:nth-child(11){width:9%;white-space:normal;text-align:left}
+.src-filter{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.src-filter .sf{cursor:pointer;padding:4px 14px;border-radius:14px;font-size:13px;background:var(--panel2);color:var(--muted);border:1px solid var(--border)}
+.src-filter .sf.act{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fund-platform-summary{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:13px;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.fund-platform-summary th,.fund-platform-summary td{padding:10px 12px;text-align:center;border-top:1px solid var(--border)}
+.fund-platform-summary th{background:var(--panel2);color:var(--muted);font-weight:500;font-size:12px}
+.fund-platform-summary td{font-weight:600;font-variant-numeric:tabular-nums}
+.fund-platform-summary td:first-child,.fund-platform-summary th:first-child{text-align:left}
+.fund-platform-summary tr:first-child th{border-top:none}
+.fund-platform-summary .sub{font-size:11px;color:var(--muted);font-weight:400}
 td:first-child,th:first-child{text-align:left}
 tbody tr{border-top:1px solid var(--border)}
 tbody tr:hover{background:rgba(124,92,255,.06)}
@@ -186,6 +212,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 <div class="tabs">
   <div class="tab active" onclick="switchTab('holdings')">📊 个人持仓</div>
   <div class="tab" onclick="switchTab('market')">🌐 大盘全景</div>
+  <div class="tab" onclick="switchTab('funds')">🐔 养鸡场</div>
 </div>
 
 <!-- ===== Tab 1: Holdings ===== -->
@@ -282,8 +309,55 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 </section>
 </div>
 
+<!-- ===== Tab 3: 养鸡场 (场外基金) ===== -->
+<div class="tabpage" id="page-funds">
+<header>
+  <div class="title">🐔 养鸡场 <span class="badge">场外基金 · 含净值</span></div>
+  <div class="meta">
+    <span id="clockF">--:--:--</span>
+    <span id="statusF"><span class="dot"></span><span id="statusTextF">加载中...</span></span>
+    <span id="updatetimeF">净值 --</span>
+    <button class="refresh" onclick="refreshFunds()">立即刷新</button>
+  </div>
+</header>
+
+<section class="overview">
+  <div class="stat"><div class="label">基金总市值</div><div class="value" id="fundOvValue">--</div><div class="sub" id="fundOvValueSub">&nbsp;</div></div>
+  <div class="stat"><div class="label">总浮盈亏</div><div class="value" id="fundOvPnl">--</div><div class="sub" id="fundOvPnlSub">&nbsp;</div></div>
+  <div class="stat"><div class="label">今日净值涨跌</div><div class="value" id="fundOvDay">--</div><div class="sub" id="fundOvDaySub">&nbsp;</div></div>
+  <div class="stat"><div class="label">持有基金数</div><div class="value" id="fundOvCount">--</div><div class="sub" id="fundOvCountSub">&nbsp;</div></div>
+  <div class="stat"><div class="label">已实现盈亏</div><div class="value" id="fundOvRealized">--</div><div class="sub">赎回累计</div></div>
+</section>
+
+<div class="src-filter" id="fundSrcFilter"></div>
+<table class="fund-platform-summary" id="fundPlatformSummary">
+  <thead><tr><th>来源</th><th>总市值</th><th>持有收益</th><th>收益率</th><th>今日涨跌</th><th>基金数</th></tr></thead>
+  <tbody id="fundPlatformTbody"><tr><td colspan="6" class="empty">加载中…</td></tr></tbody>
+</table>
+<div class="panel-title">基金持仓明细 <button class="btn-add" onclick="openFundAdd()">＋ 录入基金</button> <button class="refresh" id="btnFundSync" onclick="syncFunds()">🔄 同步到后端</button></div>
+<section class="table-wrap">
+  <table id="fundTable">
+    <thead><tr>
+      <th class="fsort" data-sort="name" onclick="fundSortBy('name')">基金<span class="arr"></span></th>
+      <th class="fsort" data-sort="shares" onclick="fundSortBy('shares')">份额<span class="arr"></span></th>
+      <th class="fsort" data-sort="price" onclick="fundSortBy('price')">净值<span class="arr"></span></th>
+      <th class="fsort" data-sort="dayPct" onclick="fundSortBy('dayPct')">今日<span class="arr"></span></th>
+      <th class="fsort" data-sort="cost" onclick="fundSortBy('cost')">成本净值<span class="arr"></span></th>
+      <th class="fsort" data-sort="pnlPct" onclick="fundSortBy('pnlPct')">浮盈%<span class="arr"></span></th>
+      <th class="fsort" data-sort="pnl" onclick="fundSortBy('pnl')">浮盈额<span class="arr"></span></th>
+      <th class="fsort" data-sort="mv" onclick="fundSortBy('mv')">市值<span class="arr"></span></th>
+      <th class="fsort" data-sort="type" onclick="fundSortBy('type')">类型<span class="arr"></span></th>
+      <th class="fsort" data-sort="intent" onclick="fundSortBy('intent')">意图<span class="arr"></span></th>
+      <th class="fsort" data-sort="source" onclick="fundSortBy('source')">来源<span class="arr"></span></th>
+    </tr></thead>
+    <tbody id="fundTbody"></tbody>
+  </table>
+</section>
+<div class="hint">净值来源：天天基金（每个交易日收盘后公布单位净值，交易时段内含估算净值）。场外基金无实时价、无 K 线。点「录入基金」添加你持有的场外基金（如支付宝/天天基金购买的），填代码、份额、成本净值即可；数据先存本浏览器，点「同步到后端」写回 funds.json。</div>
+</div>
+
 <footer>
-  ⚠️ 本工作台为<strong>示例</strong>信息整理工具，所有持仓均为<strong>虚构示例数据</strong>，与任何真实账户无关。<br>
+  ⚠️ 本工作台为<strong>个人自用</strong>的信息整理工具，含真实持仓与成本数据，<strong>请勿外传或分享</strong>。<br>
   数据来源：腾讯 / 东方财富公开行情接口（每 60 秒刷新，交易时段为准）。本工具<strong>不构成投资建议、不自动下单、人在回路</strong>，所有买卖决策由使用者自行做出。<br>
   免责声明：市场有风险，投资需谨慎。工具展示内容仅供参考，据此操作盈亏自负。
 </footer>
@@ -291,11 +365,13 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 <script>
 // ===== Tab Switching =====
 function switchTab(name){
-  document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.classList.toggle('active', (name==='holdings'&&i===0)||(name==='market'&&i===1));
-  });
+  const map={holdings:0,market:1,funds:2};
+  const idx=map[name];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', i===idx));
   document.getElementById('page-holdings').classList.toggle('active', name==='holdings');
   document.getElementById('page-market').classList.toggle('active', name==='market');
+  document.getElementById('page-funds').classList.toggle('active', name==='funds');
+  if(name==='funds') refreshFunds();
 }
 
 // ===== Utilities =====
@@ -312,12 +388,14 @@ function tick(){
   const t=new Date().toLocaleTimeString('zh-CN');
   document.getElementById('clock').textContent=t;
   document.getElementById('clockM').textContent=t;
+  const cf=document.getElementById('clockF'); if(cf)cf.textContent=t;
 }
 tick(); setInterval(tick,1000);
 
 // ===== Holdings Data =====
 const HOLDINGS=[
-  {code:'510300',market:'sh',name:'沪深300ETF',  shares:100000,cost:4.000,sl:3.80, tp:4.30, tpStatus:'active',    intent:'长持',     snap:4.100},
+  // ⚠️ 示例数据：以下份额/成本/止损止盈均为虚构，请替换为你自己的持仓
+  {code:'510300',market:'sh',name:'沪深300ETF',  shares:50000, cost:4.000,sl:3.80, tp:4.30, tpStatus:'active',    intent:'长持',     snap:4.100},
   {code:'159915',market:'sz',name:'创业板ETF',   shares:80000, cost:2.000,sl:1.86, tp:2.20, tpStatus:'active',    intent:'中线',     snap:1.980},
   {code:'512760',market:'sh',name:'半导体50ETF', shares:1000,  cost:1.200,sl:1.05, tp:1.35, tpStatus:'active',    intent:'卫星仓',   snap:1.250},
   {code:'600519',market:'sh',name:'贵州茅台',    shares:100,   cost:1680.0,sl:1600,tp:1850,tpStatus:'active',     intent:'长持',     snap:1720.0},
@@ -836,6 +914,285 @@ function showToast(msg){
   t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2200);
 }
 
+// ===== 养鸡场 Funds (场外开放式基金) =====
+const FUNDS=[
+// ⚠️ 示例数据：以下份额/成本净值均为虚构，source 用于区分销售平台，请替换为你自己的场外基金
+{code:"110022",name:"易方达消费行业股票",shares:10000,cost:2.500,snap:2.900,type:"行业主题",source:"平台A",intent:"",realized:0},
+{code:"161725",name:"招商中证白酒指数(LOF)A",shares:20000,cost:0.600,snap:0.560,type:"行业主题",source:"平台A",intent:"",realized:0},
+{code:"000001",name:"华夏成长混合",shares:15000,cost:1.200,snap:1.340,type:"混合型",source:"平台B",intent:"",realized:0},
+{code:"519674",name:"银河创新成长混合A",shares:2000,cost:11.000,snap:12.760,type:"混合型",source:"平台B",intent:"",realized:0},
+{code:"007339",name:"易方达中短期美元债(QDII)C",shares:5000,cost:1.800,snap:1.890,type:"QDII",source:"平台B",intent:"",realized:0},
+];
+const LS_FUND_MANUAL='wb_fund_manual';
+const LS_FUND_SELLS='wb_fund_sells';
+const LS_FUND_ADJ='wb_fund_adjust';
+function loadFundManual(){try{return JSON.parse(localStorage.getItem(LS_FUND_MANUAL)||'[]');}catch(e){return [];}}
+function saveFundManual(a){try{localStorage.setItem(LS_FUND_MANUAL,JSON.stringify(a));}catch(e){showToast('保存失败：浏览器存储不可用');}}
+function loadFundSells(){try{return JSON.parse(localStorage.getItem(LS_FUND_SELLS)||'[]');}catch(e){return [];}}
+function saveFundSells(a){try{localStorage.setItem(LS_FUND_SELLS,JSON.stringify(a));}catch(e){showToast('保存失败');}}
+function loadFundAdjust(){try{return JSON.parse(localStorage.getItem(LS_FUND_ADJ)||'[]');}catch(e){return [];}}
+function saveFundAdjust(a){try{localStorage.setItem(LS_FUND_ADJ,JSON.stringify(a));}catch(e){showToast('保存失败');}}
+let FUND_SELLS=loadFundSells();
+let FUND_ADJ=loadFundAdjust();
+function applyFundAdjust(){
+  FUND_ADJ.forEach(a=>{
+    const f=FUNDS.find(x=>x.code===a.code);
+    if(!f)return;
+    if(a.cost!=null&&a.cost>0)f.cost=a.cost;
+    if(a.shares!=null&&a.shares>=0)f.shares=a.shares;
+  });
+}
+function applyFundSells(){
+  FUND_SELLS.forEach(s=>{
+    const f=FUNDS.find(x=>x.code===s.code);
+    if(!f)return;
+    f.shares=Math.max(0,(f.shares||0)-s.qty);
+    f.realized=(f.realized||0)+(s.realized||0);
+    if(f.shares<=0){const i=FUNDS.indexOf(f);if(i>=0)FUNDS.splice(i,1);}
+  });
+}
+(function mergeFundManual(){
+  loadFundManual().forEach(m=>{
+    if(!FUNDS.some(f=>f.code===m.code)){
+      FUNDS.push(Object.assign({manual:true,snap:m.cost,realized:0},m));
+    }
+  });
+})();
+applyFundAdjust();
+applyFundSells();
+
+async function fetchFundNav(codes){
+  try{
+    const r=await fetch(API+'/api/fundnav?code='+encodeURIComponent(codes.join(',')),{cache:'no-store'});
+    const arr=await r.json();
+    const out={}; (arr||[]).forEach(d=>{out[d.code]=d;}); return out;
+  }catch(e){return {};}
+}
+let lastFundsOK=false, fundSortKey=null, fundSortDir='desc';
+async function refreshFunds(){
+  const codes=FUNDS.map(f=>f.code).filter(Boolean);
+  if(!codes.length){renderFunds(false);return;}
+  const data=await fetchFundNav(codes);
+  let ok=false;
+  FUNDS.forEach(f=>{
+    const p=data[f.code];
+    if(p&&p.price>0){f.price=p.price;f.prevClose=p.prevClose;f.dayPct=p.dayPct||0;f.navDate=p.jzrq;f.gztime=p.gztime;ok=true;}
+    else{f.price=f.snap||f.price;f.prevClose=f.snap||f.prevClose;f.dayPct=0;}
+  });
+  lastFundsOK=ok;
+  renderFunds(ok);
+}
+function fundSortBy(key){
+  if(fundSortKey===key) fundSortDir=fundSortDir==='desc'?'asc':'desc';
+  else {fundSortKey=key; fundSortDir='desc';}
+  updateFundArrows();
+  renderFunds(lastFundsOK);
+}
+function updateFundArrows(){
+  document.querySelectorAll('#fundTable th.fsort').forEach(th=>{
+    const k=th.getAttribute('data-sort');
+    th.classList.toggle('act', k===fundSortKey);
+    const arr=th.querySelector('.arr');
+    if(arr) arr.textContent=(k===fundSortKey)?(fundSortDir==='desc'?'▼':'▲'):'';
+  });
+}
+let fundSrc='全部';
+function renderFundSrcFilter(){
+  const srcs=Array.from(new Set(FUNDS.map(f=>f.source).filter(Boolean)));
+  const all=['全部'].concat(srcs);
+  document.getElementById('fundSrcFilter').innerHTML=all.map(s=>"<span class='sf"+(s===fundSrc?' act':'')+"' data-s='"+s+"' onclick='setFundSrc(this.getAttribute(\"data-s\"))'>"+s+"</span>").join('');
+}
+function setFundSrc(s){fundSrc=s;renderFundSrcFilter();renderFunds(lastFundsOK);}
+function renderFunds(ok){
+  FUNDS.forEach(f=>{
+    f.mv=f.price*f.shares;
+    f.pnl=(f.price-f.cost)*f.shares;
+    f.pnlPct=(f.price-f.cost)/f.cost*100;
+  });
+  const list=(fundSrc==='全部')?FUNDS:FUNDS.filter(f=>f.source===fundSrc);
+  let totVal=0,totPnl=0,dayVal=0,dayBase=0;
+  const realizedTotal=FUND_SELLS.reduce((a,s)=>a+(s.realized||0),0);
+  list.forEach(f=>{
+    totVal+=f.mv;totPnl+=f.pnl;
+    dayVal+=(f.price-f.prevClose)*f.shares;dayBase+=f.prevClose*f.shares;
+  });
+
+  // 平台总览（支付宝 / 天天基金 / 合计）
+  const sourceTotals={};
+  const allTotal={val:0,pnl:0,dayVal:0,dayBase:0,count:0};
+  FUNDS.forEach(f=>{
+    const s=f.source||'未分类';
+    if(!sourceTotals[s])sourceTotals[s]={val:0,pnl:0,dayVal:0,dayBase:0,count:0};
+    const mv=f.mv,pnl=f.pnl,dv=(f.price-f.prevClose)*f.shares,db=f.prevClose*f.shares;
+    sourceTotals[s].val+=mv;sourceTotals[s].pnl+=pnl;sourceTotals[s].dayVal+=dv;sourceTotals[s].dayBase+=db;sourceTotals[s].count++;
+    allTotal.val+=mv;allTotal.pnl+=pnl;allTotal.dayVal+=dv;allTotal.dayBase+=db;allTotal.count++;
+  });
+  const summaryRows=[['支付宝',sourceTotals['支付宝']],['天天基金',sourceTotals['天天基金']],['合计',allTotal]]
+    .filter(([lab,t])=>t&&t.count>0)
+    .map(([lab,t])=>{
+      const pct=t.val?t.pnl/(t.val-t.pnl)*100:0;
+      const dayPct=t.dayBase>0?t.dayVal/t.dayBase*100:0;
+      return '<tr><td>'+lab+'</td><td>¥'+fmt(t.val,0)+'</td><td class="'+cls(t.pnl)+'">'+sign(t.pnl)+'¥'+fmt(Math.abs(t.pnl),0)+'</td><td class="'+cls(pct)+'">'+sign(pct)+fmt(pct,2)+'%</td><td class="'+cls(dayPct)+'">'+sign(dayPct)+fmt(dayPct,2)+'%</td><td>'+t.count+'</td></tr>';
+    }).join('');
+  document.getElementById('fundPlatformTbody').innerHTML=summaryRows||'<tr><td colspan="6" class="empty">无数据</td></tr>';
+  document.getElementById('fundOvValue').textContent='¥'+fmt(totVal,0);
+  document.getElementById('fundOvPnl').innerHTML='<span class="'+cls(totPnl)+'">'+sign(totPnl)+'¥'+fmt(Math.abs(totPnl),0)+'</span>';
+  document.getElementById('fundOvPnlSub').innerHTML='<span class="'+cls(totPnl)+'">'+sign(totPnl)+fmt(totVal?totPnl/(totVal-totPnl)*100:0,2)+'%</span>';
+  const dayPct=dayBase>0?dayVal/dayBase*100:0;
+  document.getElementById('fundOvDay').innerHTML='<span class="'+cls(dayPct)+'">'+sign(dayPct)+fmt(dayPct,2)+'%</span>';
+  document.getElementById('fundOvDaySub').textContent='基于上一净值估算';
+  document.getElementById('fundOvCount').textContent=list.length;
+  document.getElementById('fundOvCountSub').textContent=(fundSrc==='全部'?'全部平台':fundSrc)+' · 场外基金';
+  document.getElementById('fundOvRealized').innerHTML='<span class="'+cls(realizedTotal)+'">'+sign(realizedTotal)+'¥'+fmt(Math.abs(realizedTotal),0)+'</span>';
+
+  const rows = fundSortKey ? list.slice().sort((a,b)=>{
+    let va=a[fundSortKey],vb=b[fundSortKey];
+    if(va==null)va=-Infinity; if(vb==null)vb=-Infinity;
+    let r=(typeof va==='string')?(''+va).localeCompare(''+vb,'zh'):(va-vb);
+    return fundSortDir==='asc'?r:-r;
+  }) : list;
+  if(!rows.length){
+    document.getElementById('fundTbody').innerHTML='<tr><td colspan="11" class="empty">🐤 还没有基金持仓，点上方「＋ 录入基金」添加你持有的场外基金（支付宝/天天基金等）</td></tr>';
+  } else {
+    document.getElementById('fundTbody').innerHTML=rows.map(f=>{
+      const intentPill=/不卖|长持|长期/.test(f.intent||'')?'<span class="pill intent">'+f.intent+'</span>':'<span class="pill hold">'+(f.intent||'—')+'</span>';
+      const statusPill=f.pnl>=0?'<span class="pill intent">盈利</span>':'<span class="pill warn">亏损</span>';
+      const typePill=f.type?'<span class="pill hold">'+f.type+'</span>':'<span class="pill hold">—</span>';
+      return '<tr>'+
+        '<td><div class="name">'+f.name+
+          (f.manual?'<span class="del-btn" onclick="delFundManual(\''+f.code+'\')" title="删除该录入">✕</span>':'')+
+          '<span class="sell-btn" onclick="openFundSell(\''+f.code+'\',\''+f.name+'\','+f.shares+')" title="记录赎回/减仓">赎回</span>'+
+          '<span class="adj-btn" onclick="openFundAdjust(\''+f.code+'\',\''+f.name+'\','+f.cost+','+f.shares+')" title="调整成本净值/份额">调整</span>'+
+        '</div><div class="code">'+f.code+'</div>'+
+        (f.realized?('<div class="realized '+cls(f.realized)+'">已实现'+sign(f.realized)+'¥'+fmt(Math.abs(f.realized),0)+'</div>'):'')+
+        (f.navDate?('<div class="khint">净值日期 '+f.navDate+'</div>'):'')+'</td>'+
+        '<td>'+fmt(f.shares,0)+'</td>'+
+        '<td class="'+cls(f.price-f.prevClose)+'">'+fmt(f.price,4)+'</td>'+
+        '<td class="'+cls(f.dayPct)+'">'+sign(f.dayPct)+fmt(f.dayPct,2)+'%</td>'+
+        '<td>'+fmtCost(f.cost)+'</td>'+
+        '<td class="'+cls(f.pnlPct)+'">'+sign(f.pnlPct)+fmt(f.pnlPct,2)+'%</td>'+
+        '<td class="'+cls(f.pnl)+'">'+sign(f.pnl)+'¥'+fmt(Math.abs(f.pnl),0)+'</td>'+
+        '<td>¥'+fmt(f.mv,0)+'</td>'+
+        '<td style="text-align:left">'+typePill+'</td>'+
+        '<td style="text-align:left">'+intentPill+'</td>'+
+        '<td style="text-align:left"><span class="pill hold">'+f.source+'</span></td></tr>';
+    }).join('');
+  }
+  const st=document.getElementById('statusF');
+  if(ok){st.querySelector('.dot').className='dot';document.getElementById('statusTextF').textContent='净值已更新';}
+  else{st.querySelector('.dot').className='dot err';document.getElementById('statusTextF').textContent='净值获取失败（显示录入价）';}
+  document.getElementById('updatetimeF').textContent='净值 '+new Date().toLocaleTimeString('zh-CN');
+}
+
+function openFundAdd(){
+  document.getElementById('fundAddModal').classList.add('show');
+  setTimeout(()=>{try{document.getElementById('fCode').focus();}catch(e){}},50);
+}
+function closeFundAdd(){document.getElementById('fundAddModal').classList.remove('show');}
+function submitFundAdd(){
+  const code=document.getElementById('fCode').value.trim();
+  const name=document.getElementById('fName').value.trim()||code;
+  const shares=parseFloat(document.getElementById('fShares').value);
+  const cost=parseFloat(document.getElementById('fCost').value);
+  const type=document.getElementById('fType').value.trim();
+  const intent=document.getElementById('fIntent').value.trim()||'未分类';
+  const source=document.getElementById('fSource')?document.getElementById('fSource').value.trim():'支付宝';
+  const note=document.getElementById('fundAddNote');note.style.display='none';
+  if(!/^\d{6}$/.test(code)){note.textContent='基金代码应为 6 位数字';note.style.display='block';return;}
+  if(!(shares>0)||!(cost>0)){note.textContent='份额与成本净值必须为正数';note.style.display='block';return;}
+  if(FUNDS.some(f=>f.code===code)){note.textContent='该基金已在列表中，请勿重复录入';note.style.display='block';return;}
+  const rec={code,name,shares,cost,type,intent,source,manual:true,snap:cost,realized:0};
+  FUNDS.push(rec);
+  const arr=loadFundManual();arr.push(rec);saveFundManual(arr);
+  ['fCode','fName','fShares','fCost','fType','fIntent','fSource'].forEach(id=>document.getElementById(id).value='');
+  closeFundAdd();
+  showToast('已录入 '+name+'，净值加载中…');
+  refreshFunds();
+}
+function delFundManual(code){
+  if(!confirm('确定删除该手动录入的基金「'+code+'」？'))return;
+  saveFundManual(loadFundManual().filter(m=>!(m.code===code)));
+  const i=FUNDS.findIndex(f=>f.code===code&&f.manual);
+  if(i>=0)FUNDS.splice(i,1);
+  renderFunds(lastFundsOK);
+  showToast('已删除 '+code);
+}
+function openFundSell(code,name,maxShares){
+  document.getElementById('fsCode').value=code;
+  document.getElementById('fsName').textContent=name+'（'+code+'）';
+  document.getElementById('fsMax').value=maxShares;
+  document.getElementById('fsQty').value='';
+  document.getElementById('fsPrice').value='';
+  document.getElementById('fundSellNote').style.display='none';
+  document.getElementById('fundSellModal').classList.add('show');
+  setTimeout(()=>{try{document.getElementById('fsQty').focus();}catch(e){}},50);
+}
+function closeFundSell(){document.getElementById('fundSellModal').classList.remove('show');}
+function submitFundSell(){
+  const code=document.getElementById('fsCode').value;
+  const max=parseFloat(document.getElementById('fsMax').value);
+  const qty=parseFloat(document.getElementById('fsQty').value);
+  const price=parseFloat(document.getElementById('fsPrice').value);
+  const note=document.getElementById('fundSellNote');note.style.display='none';
+  if(!(qty>0)){note.textContent='赎回份额必须为正数';note.style.display='block';return;}
+  if(qty>max+1e-6){note.textContent='赎回份额不能超过当前持有 '+fmt(max,0);note.style.display='block';return;}
+  if(!(price>0)){note.textContent='赎回净值必须为正数';note.style.display='block';return;}
+  const f=FUNDS.find(x=>x.code===code);
+  if(!f){note.textContent='未找到该基金';note.style.display='block';return;}
+  const realized=(price-f.cost)*qty;
+  f.shares=Math.max(0,f.shares-qty);
+  f.realized=(f.realized||0)+realized;
+  FUND_SELLS.push({code,name:f.name,qty,price,realized:Math.round(realized*100)/100,ts:Date.now()});
+  saveFundSells(FUND_SELLS);
+  if(f.shares<=0){const i=FUNDS.indexOf(f);if(i>=0)FUNDS.splice(i,1);}
+  closeFundSell();
+  showToast('已赎回 '+f.name+' '+fmt(qty,0)+'份 @'+price+'，已实现'+(realized>=0?'盈利':'亏损')+' ¥'+fmt(Math.abs(realized),0));
+  renderFunds(lastFundsOK);
+}
+function openFundAdjust(code,name,cost,shares){
+  document.getElementById('faCode').value=code;
+  document.getElementById('faName').textContent=name+'（'+code+'）';
+  document.getElementById('faCost').value=cost;
+  document.getElementById('faShares').value=shares;
+  document.getElementById('fundAdjNote').style.display='none';
+  document.getElementById('fundAdjModal').classList.add('show');
+  setTimeout(()=>{try{document.getElementById('faCost').focus();}catch(e){}},50);
+}
+function closeFundAdjust(){document.getElementById('fundAdjModal').classList.remove('show');}
+function submitFundAdjust(){
+  const code=document.getElementById('faCode').value;
+  const cost=parseFloat(document.getElementById('faCost').value);
+  const shares=parseFloat(document.getElementById('faShares').value);
+  const note=document.getElementById('fundAdjNote');note.style.display='none';
+  if(!(cost>0)){note.textContent='成本净值必须为正数';note.style.display='block';return;}
+  if(!(shares>=0)){note.textContent='份额不能为负';note.style.display='block';return;}
+  const f=FUNDS.find(x=>x.code===code);
+  if(!f){note.textContent='未找到该基金';note.style.display='block';return;}
+  f.cost=cost;f.shares=shares;
+  const i=FUND_ADJ.findIndex(a=>a.code===code);
+  const rec={code,cost,shares};
+  if(i>=0)FUND_ADJ[i]=rec;else FUND_ADJ.push(rec);
+  saveFundAdjust(FUND_ADJ);
+  closeFundAdjust();
+  showToast('已调整 '+f.name+'：成本 '+cost+' / 份额 '+fmt(shares,0));
+  renderFunds(lastFundsOK);
+}
+function syncFunds(){
+  if(!FUNDS.length){showToast('暂无可同步的基金');return;}
+  const funds=FUNDS.map(f=>({code:f.code,name:f.name,shares:f.shares,cost:f.cost,type:f.type,intent:f.intent,source:f.source,manual:!!f.manual,realized:f.realized||0,snap:f.price}));
+  const btn=document.getElementById('btnFundSync');
+  const old=btn.textContent;btn.disabled=true;btn.textContent='同步中…';
+  fetch('/api/sync_funds',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({funds})})
+    .then(r=>r.json().then(j=>({ok:r.ok,j})))
+    .then(({ok,j})=>{
+      if(ok&&j&&j.ok)showToast('已同步 '+j.count+' 只基金到后端 funds.json');
+      else showToast('同步失败：'+((j&&j.error)||'未知错误'));
+    })
+    .catch(e=>showToast('同步失败：'+e.message))
+    .finally(()=>{btn.disabled=false;btn.textContent=old;});
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeFundAdd();closeFundSell();closeFundAdjust();}});
+
 // ===== Init =====
 renderHoldings(false);
 refreshHoldings();
@@ -843,6 +1200,11 @@ setInterval(refreshHoldings,60000);
 
 refreshMarket();
 setInterval(refreshMarket,60000);
+
+renderFundSrcFilter();
+renderFunds(false);
+refreshFunds();
+setInterval(refreshFunds,60000);
 </script>
 <div class="kline-modal" id="klineModal" onclick="if(event.target===this)closeKline()">
   <div class="kline-dialog">
@@ -865,16 +1227,16 @@ setInterval(refreshMarket,60000);
       <div class="fld"><label>市场</label>
         <select id="aMarket"><option value="sh">上交所 sh</option><option value="sz">深交所 sz</option><option value="bj">北交所 bj</option></select>
       </div>
-      <div class="fld"><label>代码（不含前缀）</label><input id="aCode" placeholder="如 510300 / 159915" /></div>
+      <div class="fld"><label>代码（不含前缀）</label><input id="aCode" placeholder="如 600519 / 510300" /></div>
     </div>
     <div class="fld"><label>名称</label><input id="aName" placeholder="如 沪深300ETF（可留空自动填代码）" /></div>
     <div class="row2">
-      <div class="fld"><label>数量（股）</label><input id="aShares" type="number" min="1" placeholder="如 1000" /></div>
-      <div class="fld"><label>成本价</label><input id="aCost" type="number" step="0.001" min="0" placeholder="如 4.000" /></div>
+      <div class="fld"><label>数量（股）</label><input id="aShares" type="number" min="1" placeholder="1000" /></div>
+      <div class="fld"><label>成本价</label><input id="aCost" type="number" step="0.001" min="0" placeholder="4.000" /></div>
     </div>
     <div class="row2">
-      <div class="fld"><label>止损位/支撑位（可选）</label><input id="aSl" type="number" step="0.001" placeholder="如 3.80" /></div>
-      <div class="fld"><label>压力位（可选）</label><input id="aTp" type="number" step="0.001" placeholder="如 4.30" /></div>
+      <div class="fld"><label>止损位/支撑位（可选）</label><input id="aSl" type="number" step="0.001" placeholder="如 3.800" /></div>
+      <div class="fld"><label>压力位（可选）</label><input id="aTp" type="number" step="0.001" placeholder="如 4.300" /></div>
     </div>
     <div class="fld"><label>意图 / 备注</label><input id="aIntent" placeholder="中线 / 长持 / 短期不卖" /></div>
     <div class="mnote" id="addNote"></div>
@@ -898,7 +1260,7 @@ setInterval(refreshMarket,60000);
       <div class="fld"><label>当前持股（股）</label><input id="sMax" type="number" disabled style="opacity:.7" /></div>
       <div class="fld"><label>卖出数量（股）</label><input id="sQty" type="number" min="1" placeholder="如 500" /></div>
     </div>
-    <div class="fld"><label>卖出价格</label><input id="sPrice" type="number" step="0.001" min="0" placeholder="如 4.10" /></div>
+    <div class="fld"><label>卖出价格</label><input id="sPrice" type="number" step="0.001" min="0" placeholder="如 4.000" /></div>
     <div class="mnote" id="sellNote"></div>
     <div class="hint">记录后自动扣减持股并核算已实现盈亏（卖出价 − 成本价）× 数量；减到 0 股视为清仓移除。点「同步到后端」可一并写回 positions.json（含已实现盈亏）。</div>
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
@@ -917,13 +1279,83 @@ setInterval(refreshMarket,60000);
     <div class="fld"><label>标的</label><div id="aNm" style="padding:6px 0;font-weight:600"></div></div>
     <div class="row2">
       <div class="fld"><label>成本价</label><input id="aCost" type="number" step="0.001" min="0" placeholder="如 4.000" /></div>
-      <div class="fld"><label>持股数量（股）</label><input id="aShares" type="number" min="0" placeholder="如 80000" /></div>
+      <div class="fld"><label>持股数量（股）</label><input id="aShares" type="number" min="0" placeholder="如 5000" /></div>
     </div>
     <div class="mnote" id="adjNote"></div>
     <div class="hint">直接覆盖该持仓的成本价与持股数（如补仓后更新均价、或修正记录）。点「同步到后端」可一并写回 positions.json；调整后浮盈亏、距支撑/压力位等会按新值重算。</div>
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
       <button class="btn-add" onclick="submitAdjust()">保存调整</button>
       <button class="refresh" onclick="closeAdjust()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 录入场外基金模态框 ===== -->
+<div class="modal" id="fundAddModal" onclick="if(event.target===this)closeFundAdd()">
+  <div class="modal-box">
+    <h3>录入场外基金 <span class="x" onclick="closeFundAdd()">&times;</span></h3>
+    <div class="fld"><label>基金代码（6 位）</label><input id="fCode" placeholder="如 110011" /></div>
+    <div class="fld"><label>名称</label><input id="fName" placeholder="如 易方达中小盘混合（可留空）" /></div>
+    <div class="row2">
+      <div class="fld"><label>持有份额</label><input id="fShares" type="number" min="1" placeholder="如 10000" /></div>
+      <div class="fld"><label>成本净值</label><input id="fCost" type="number" step="0.0001" min="0" placeholder="如 2.3456" /></div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label>基金类型（可选）</label>
+        <select id="fType"><option value="">未填</option><option>股票型</option><option>混合型</option><option>债券型</option><option>指数型</option><option>货币型</option><option>QDII</option><option>FOF</option><option>其他</option></select>
+      </div>
+      <div class="fld"><label>意图 / 备注</label><input id="fIntent" placeholder="长期 / 定投 / 避险" /></div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label>平台来源</label>
+        <select id="fSource"><option value="支付宝">支付宝</option><option value="天天基金">天天基金</option><option value="银行">银行</option><option value="其他">其他</option></select>
+      </div>
+      <div class="fld"><label>&nbsp;</label><span class="hint" style="margin:0">选择购买平台，便于按来源筛选</span></div>
+    </div>
+    <div class="mnote" id="fundAddNote"></div>
+    <div class="hint">场外基金（支付宝 / 天天基金 / 银行等购买）只有每日净值，无实时价、无 K 线。录入后净值由天天基金接口自动更新；数据先存本浏览器，点「同步到后端」写回 funds.json。</div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn-add" onclick="submitFundAdd()">保存</button>
+      <button class="refresh" onclick="closeFundAdd()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 赎回/减仓模态框 ===== -->
+<div class="modal" id="fundSellModal" onclick="if(event.target===this)closeFundSell()">
+  <div class="modal-box">
+    <h3>记录赎回 / 减仓 <span class="x" onclick="closeFundSell()">&times;</span></h3>
+    <input type="hidden" id="fsCode" />
+    <div class="fld"><label>基金</label><div id="fsName" style="padding:6px 0;font-weight:600"></div></div>
+    <div class="row2">
+      <div class="fld"><label>当前份额</label><input id="fsMax" type="number" disabled style="opacity:.7" /></div>
+      <div class="fld"><label>赎回份额</label><input id="fsQty" type="number" min="1" placeholder="如 5000" /></div>
+    </div>
+    <div class="fld"><label>赎回净值</label><input id="fsPrice" type="number" step="0.0001" min="0" placeholder="如 2.3500" /></div>
+    <div class="mnote" id="fundSellNote"></div>
+    <div class="hint">记录后自动扣减份额并核算已实现盈亏（赎回净值 − 成本净值）× 份额；减到 0 份视为清仓移除。点「同步到后端」可一并写回 funds.json（含已实现盈亏）。</div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn-add" onclick="submitFundSell()">确认赎回</button>
+      <button class="refresh" onclick="closeFundSell()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 调整成本净值/份额模态框 ===== -->
+<div class="modal" id="fundAdjModal" onclick="if(event.target===this)closeFundAdjust()">
+  <div class="modal-box">
+    <h3>调整成本净值 / 份额 <span class="x" onclick="closeFundAdjust()">&times;</span></h3>
+    <input type="hidden" id="faCode" />
+    <div class="fld"><label>基金</label><div id="faName" style="padding:6px 0;font-weight:600"></div></div>
+    <div class="row2">
+      <div class="fld"><label>成本净值</label><input id="faCost" type="number" step="0.0001" min="0" placeholder="如 2.3456" /></div>
+      <div class="fld"><label>持有份额</label><input id="faShares" type="number" min="0" placeholder="如 10000" /></div>
+    </div>
+    <div class="mnote" id="fundAdjNote"></div>
+    <div class="hint">直接覆盖该基金的成本净值与份额（如分红再投资后更新、或修正记录）。点「同步到后端」可一并写回 funds.json。</div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn-add" onclick="submitFundAdjust()">保存调整</button>
+      <button class="refresh" onclick="closeFundAdjust()">取消</button>
     </div>
   </div>
 </div>

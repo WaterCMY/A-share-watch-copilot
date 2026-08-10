@@ -23,6 +23,10 @@ UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 # 沪深京A股：沪市主板+深市主板+创业板+科创板+北交所
 EM_BREADTH_FS = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81'
 
+# 绕过系统代理：Windows 下 urllib 会自动读注册表代理配置，
+# 若该代理端口未运行会报 WinError 10061（目标计算机积极拒绝），导致所有行情请求失败。
+OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
 
 class H(BaseHTTPRequestHandler):
     def _send(self, code, body, ctype='text/plain; charset=utf-8'):
@@ -45,6 +49,8 @@ class H(BaseHTTPRequestHandler):
             referer = 'https://finance.sina.com.cn/'
         elif 'qt.gtimg' in url:
             referer = 'https://gu.qq.com/'
+        elif 'fundgz' in url or '1234567' in url or 'fund.eastmoney.com' in url or 'fundapi' in url:
+            referer = 'https://fundf10.eastmoney.com/'
         else:
             referer = 'https://quote.eastmoney.com/'
         req = urllib.request.Request(url, headers={
@@ -52,7 +58,7 @@ class H(BaseHTTPRequestHandler):
             'Referer': referer,
             'Accept': '*/*',
         })
-        with urllib.request.urlopen(req, timeout=12) as resp:
+        with OPENER.open(req, timeout=12) as resp:
             raw = resp.read()
             return raw.decode(decode, 'ignore')
 
@@ -162,6 +168,38 @@ class H(BaseHTTPRequestHandler):
             })
         return {'name': dd.get('name') or (market + code), 'code': code, 'points': pts}
 
+    def fetch_fund_nav(self, code):
+        """代理东方财富基金净值接口 api.fund.eastmoney.com/f10/lsjz，返回最新单位净值/日涨跌。
+        场外开放式基金无实时价，只有每个交易日公布的「单位净值」(DWJZ)。取最近两条记录：最新为现价，次条为昨净值用于算日涨跌。"""
+        params = urllib.parse.urlencode({
+            'fundCode': code, 'pageIndex': '1', 'pageSize': '2',
+            '_': str(int(__import__('time').time() * 1000)),
+        })
+        url = 'https://api.fund.eastmoney.com/f10/lsjz?' + params
+        raw = self._proxy(url, 'utf-8')
+        d = __import__('json').loads(raw)
+        data = (d.get('Data') or {}) if isinstance(d, dict) else {}
+        lst = data.get('LSJZList') or []
+        if not lst:
+            return None
+        latest = lst[0]
+        price = float(latest.get('DWJZ') or 0)
+        jzrq = latest.get('FSRQ', '')
+        if len(lst) > 1:
+            prev = float(lst[1].get('DWJZ') or 0)
+        else:
+            prev = price
+        day_pct = ((price - prev) / prev * 100) if prev > 0 else 0
+        return {
+            'code': code,
+            'name': '',
+            'dwjz': price, 'gsz': None,
+            'gztime': '',
+            'jzrq': jzrq,
+            'price': price, 'prevClose': prev, 'dayPct': day_pct,
+            'status': latest.get('SHZT', ''),
+        }
+
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
 
@@ -223,6 +261,28 @@ class H(BaseHTTPRequestHandler):
             try:
                 data = self.fetch_intraday(market, code)
                 self._send(200, __import__('json').dumps(data, ensure_ascii=False),
+                           'application/json; charset=utf-8')
+            except Exception as e:
+                self._send(502, '{"error":"%s"}' % str(e), 'application/json')
+            return
+
+        if u.path == '/api/fundnav':
+            qs = urllib.parse.parse_qs(u.query)
+            codes = qs.get('code', [''])[0]
+            codes = [c.strip() for c in codes.split(',') if c.strip()]
+            if not codes:
+                self._send(400, 'missing code')
+                return
+            try:
+                out = []
+                for c in codes:
+                    try:
+                        d = self.fetch_fund_nav(c)
+                        if d:
+                            out.append(d)
+                    except Exception:
+                        continue
+                self._send(200, __import__('json').dumps(out, ensure_ascii=False),
                            'application/json; charset=utf-8')
             except Exception as e:
                 self._send(502, '{"error":"%s"}' % str(e), 'application/json')
@@ -319,6 +379,55 @@ class H(BaseHTTPRequestHandler):
                 with open(pj, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                 self._send(200, json.dumps({'ok': True, 'count': count}, ensure_ascii=False),
+                           'application/json; charset=utf-8')
+            except Exception as e:
+                self._send(500, json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False),
+                           'application/json; charset=utf-8')
+            return
+
+        if u.path == '/api/sync_funds':
+            try:
+                length = int(self.headers.get('Content-Length', 0) or 0)
+                raw = self.rfile.read(length) if length else b''
+                payload = json.loads(raw.decode('utf-8') or '{}')
+                fj = os.path.join(ROOT, 'funds.json')
+                now = time.strftime('%Y-%m-%d %H:%M:%S')
+                incoming = payload.get('funds', [])
+                base = {}
+                if os.path.isfile(fj):
+                    try:
+                        with open(fj, 'r', encoding='utf-8') as f:
+                            base = json.load(f)
+                    except Exception:
+                        base = {}
+                if not isinstance(base, dict):
+                    base = {}
+                existing = {(p.get('code')): p for p in base.get('funds', [])}
+                result = []
+                for it in incoming:
+                    code = it.get('code')
+                    if not code:
+                        continue
+                    b = existing.get(code) or {}
+                    rec = {
+                        'code': code,
+                        'name': it.get('name') or b.get('name') or code,
+                        'shares': it.get('shares'),
+                        'cost': it.get('cost'),
+                        'type': it.get('type') or b.get('type') or '',
+                        'intent': it.get('intent') or b.get('intent') or '',
+                        'manual': it.get('manual', False),
+                        'realized_pnl': it.get('realized') or 0,
+                        'snap': it.get('snap') or b.get('snap') or it.get('cost'),
+                        'synced_at': now,
+                    }
+                    result.append(rec)
+                meta = base.get('metadata', {})
+                meta['updated_at'] = now
+                data = {'metadata': meta, 'funds': result}
+                with open(fj, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                self._send(200, json.dumps({'ok': True, 'count': len(result)}, ensure_ascii=False),
                            'application/json; charset=utf-8')
             except Exception as e:
                 self._send(500, json.dumps({'ok': False, 'error': str(e)}, ensure_ascii=False),

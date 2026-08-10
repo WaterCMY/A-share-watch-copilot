@@ -50,7 +50,8 @@
 - 📉 每标的独立设价格提醒（支撑/压力位通知）
 - 🛡️ 断线哨兵：数据源连接器掉线时及时告警
 - 📱 PC 端配置 + 移动端（小程序 / App）实时接收推送、随时问答、到价弹窗
-- 🖥️ **本地工作台（可选）**：单页看盘 HTML + 本地代理，支持实时行情、K线/分时弹窗、手动录入/卖出减仓/调整成本、一键同步回持仓档案
+- 🖥️ **本地工作台（可选）**：单页看盘 HTML + 本地代理，三个 Tab（个人持仓 / 大盘全景 / 养鸡场），支持实时行情、K线/分时弹窗、手动录入/卖出减仓/调整成本、一键同步回持仓档案
+- 🐔 **养鸡场（场外基金）**：跟踪场外开放式基金每日净值与持有收益，支持按销售平台分组筛选与平台总览（分平台 + 合计）
 - 🔒 人在回路：只辅助决策，不代你下单
 
 ## 快速开始
@@ -61,6 +62,7 @@
 4. **创建自动化任务**：按 `references/automation-templates.md` 的 rrule + prompt 创建 8 个定时任务。
 5. **设置原生提醒**：在 westock 设为 each 标的的到价提醒（low=支撑位 / high=压力位）作为实时兜底。
 6. **（可选）搭建本地工作台**：将 `assets/workbench.example.html` 与 `assets/workbench-server.py` 复制到 `positions.json` 同目录，`python workbench-server.py` 启动后访问 `http://localhost:8801`。详见 `references/workbench-guide.md`。
+7. **（可选）启用养鸡场**：若要跟踪场外开放式基金，再复制 `assets/funds.template.json` 为同目录下的 `funds.json` 并替换为你的基金持仓（同样含个人数据，已在 `.gitignore` 中排除）。
 
 > 更详细的上手路径见 `references/` 下各文档。
 
@@ -73,7 +75,8 @@ a-share-watch-copilot/
 ├── LICENSE                        # MIT + 投资风险提示
 ├── .gitignore                     # 忽略个人持仓等敏感文件
 ├── assets/
-│   ├── positions.template.json    # 持仓文件模板（示例数据）
+│   ├── positions.template.json    # 场内持仓文件模板（示例数据）
+│   ├── funds.template.json        # 场外基金（养鸡场）模板与字段说明
 │   ├── workbench.example.html     # 本地工作台前端示例（脱敏）
 │   └── workbench-server.py        # 本地工作台代理服务示例
 └── references/
@@ -81,7 +84,7 @@ a-share-watch-copilot/
     ├── automation-templates.md     # 8 个自动化任务模板
     ├── data-sources.md            # 数据源选型与踩坑经验
     ├── report-templates.md        # 报告结构模板
-    └── workbench-guide.md         # 本地工作台架构与搭建指南
+    └── workbench-guide.md         # 本地工作台架构与搭建指南（含养鸡场）
 ```
 
 ## 合规与法律
