@@ -379,6 +379,8 @@ const fmt=(n,d=2)=> n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{min
 const fmtCost=(n)=> n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:4});
 // 净值按真实位数显示：有原始字符串(东方财富返回的真实小数位)优先用，否则最多4位
 const fmtRaw=(n,s)=> (s!=null&&String(s)!=='')?String(s):(n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:4}));
+// 净值日期 YYYY-MM-DD -> M/D（如 2026-08-07 -> 8/7）
+const fmtNavDate=(s)=>{ if(!s)return ''; const m=/(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); return m?parseInt(m[2],10)+'/'+parseInt(m[3],10):s; };
 const cls=(n)=> n>0?'up':(n<0?'down':'flat');
 const sign=(n)=> n>0?'+':'';
 
@@ -1067,9 +1069,9 @@ function renderFunds(ok){
           '<span class="adj-btn" onclick="openFundAdjust(\''+f.code+'\',\''+f.name+'\','+f.cost+','+f.shares+')" title="调整成本净值/份额">调整</span>'+
         '</div><div class="code">'+f.code+'</div>'+
         (f.realized?('<div class="realized '+cls(f.realized)+'">已实现'+sign(f.realized)+'¥'+fmt(Math.abs(f.realized),0)+'</div>'):'')+
-        (f.navDate?('<div class="khint">净值日期 '+f.navDate+'</div>'):'')+'</td>'+
+        '</td>'+
         '<td>'+fmt(f.shares,0)+'</td>'+
-        '<td class="'+cls(f.price-f.prevClose)+'">'+fmtRaw(f.price,f.price_raw)+'</td>'+
+        '<td class="'+cls(f.price-f.prevClose)+'">'+fmtRaw(f.price,f.price_raw)+'<div class="khint">'+(f.navDate?fmtNavDate(f.navDate)+' 净值':'录入价')+'</div></td>'+
         '<td class="'+cls(f.dayPct)+'">'+sign(f.dayPct)+fmt(f.dayPct,2)+'%</td>'+
         '<td>'+fmtCost(f.cost)+'</td>'+
         '<td class="'+cls(f.pnlPct)+'">'+sign(f.pnlPct)+fmt(f.pnlPct,2)+'%</td>'+
