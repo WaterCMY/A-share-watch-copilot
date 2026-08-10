@@ -194,6 +194,15 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 .trades-table tr:last-child td{border-bottom:none}
 .trade-buy{color:#ff4d4f;font-weight:600}
 .trade-sell{color:#00b96b;font-weight:600}
+.ledger-table{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ledger-table th,.ledger-table td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+.ledger-table th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;white-space:nowrap}
+.ledger-table td{white-space:nowrap}
+.ledger-table tbody tr:hover{background:var(--panel2)}
+.ledger-table tr:last-child td{border-bottom:none}
+.ledger-table .amt{text-align:right;font-weight:600}
+.ledger-table .num{text-align:right}
+.ledger-table .empty{text-align:center;color:var(--muted);padding:26px}
 .flow-btn{cursor:pointer;color:var(--muted);font-size:12px;margin-left:6px;padding:1px 6px;border:1px solid var(--border);border-radius:6px;white-space:nowrap}
 .flow-btn:hover{color:var(--text);border-color:var(--muted)}
 .trades-empty{color:var(--muted);padding:18px 0;text-align:center}
@@ -222,6 +231,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
   <div class="tab active" onclick="switchTab('holdings')">📊 个人持仓</div>
   <div class="tab" onclick="switchTab('market')">🌐 大盘全景</div>
   <div class="tab" onclick="switchTab('funds')">🐔 养鸡场</div>
+  <div class="tab" onclick="switchTab('ledger')">🧾 整体交易记录</div>
 </div>
 
 <!-- ===== Tab 1: Holdings ===== -->
@@ -365,6 +375,47 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 <div class="hint">净值来源：天天基金（每个交易日收盘后公布单位净值，交易时段内含估算净值）。场外基金无实时价、无 K 线。点「录入基金」添加你持有的场外基金（如支付宝/天天基金购买的），填代码、份额、成本净值即可；数据先存本浏览器，点「同步到后端」写回 funds.json。</div>
 </div>
 
+<!-- ===== Tab 4: 整体交易记录（持仓 + 养鸡场 合并）===== -->
+<div class="tabpage" id="page-ledger">
+<header>
+  <div class="title">🧾 整体交易记录 <span class="badge">持仓 + 养鸡场 合并</span></div>
+  <div class="meta">
+    <span id="clockL">--:--:--</span>
+    <span id="updatetimeL">数据 --</span>
+    <button class="refresh" onclick="loadLedger()">立即刷新</button>
+  </div>
+</header>
+
+<section class="overview">
+  <div class="stat"><div class="label">成交笔数</div><div class="value" id="lgCount">--</div><div class="sub" id="lgCountSub">建仓/加仓/赎回</div></div>
+  <div class="stat"><div class="label">累计投入本金</div><div class="value" id="lgBuyIn">--</div><div class="sub" id="lgBuyInSub">所有买入合计</div></div>
+  <div class="stat"><div class="label">累计赎回收回</div><div class="value" id="lgSellOut">--</div><div class="sub" id="lgSellOutSub">所有卖出合计</div></div>
+  <div class="stat"><div class="label">净投入</div><div class="value" id="lgNet">--</div><div class="sub" id="lgNetSub">投入 − 收回</div></div>
+</section>
+
+<div class="src-filter" id="ledgerFilter"></div>
+
+<div class="panel-title">交易明细</div>
+<section class="table-wrap">
+  <table class="ledger-table">
+    <thead><tr>
+      <th>日期</th>
+      <th>账户/平台</th>
+      <th>类型</th>
+      <th>标的</th>
+      <th>代码</th>
+      <th>方向</th>
+      <th class="num">成交价</th>
+      <th class="num">数量</th>
+      <th class="amt">金额</th>
+      <th>备注</th>
+    </tr></thead>
+    <tbody id="ledgerTbody"><tr><td colspan="10" class="empty">加载中…</td></tr></tbody>
+  </table>
+</section>
+<div class="hint">合并自 <code>positions.json</code>（个人持仓）与 <code>funds.json</code>（场外基金）的每笔交易记录。金额 = 成交价 × 数量：持仓按成本价 × 股数（投入成本），基金按成本净值 × 份额（申购本金）。「建仓」为初始持仓基线，日期显示「确切日不详」的是期初录入的持仓；点上方账户/平台标签可只看某一来源。</div>
+</div>
+
 <footer>
   ⚠️ 本工作台为<strong>个人自用</strong>的信息整理工具，含真实持仓与成本数据，<strong>请勿外传或分享</strong>。<br>
   数据来源：腾讯 / 东方财富公开行情接口（每 60 秒刷新，交易时段为准）。本工具<strong>不构成投资建议、不自动下单、人在回路</strong>，所有买卖决策由使用者自行做出。<br>
@@ -374,13 +425,15 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 <script>
 // ===== Tab Switching =====
 function switchTab(name){
-  const map={holdings:0,market:1,funds:2};
+  const map={holdings:0,market:1,funds:2,ledger:3};
   const idx=map[name];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', i===idx));
   document.getElementById('page-holdings').classList.toggle('active', name==='holdings');
   document.getElementById('page-market').classList.toggle('active', name==='market');
   document.getElementById('page-funds').classList.toggle('active', name==='funds');
+  document.getElementById('page-ledger').classList.toggle('active', name==='ledger');
   if(name==='funds') refreshFunds();
+  if(name==='ledger') loadLedger();
 }
 
 // ===== Utilities =====
@@ -1250,10 +1303,97 @@ setInterval(refreshHoldings,60000);
 refreshMarket();
 setInterval(refreshMarket,60000);
 
+// ===== 整体交易记录（持仓 + 养鸡场 合并）=====
+let LEDGER=[];
+let LEDGER_ACCOUNT='all';
+function ledgerParseDate(d){
+  if(!d) return '0000-00-00';
+  const m=/(\d{4})-(\d{1,2})-(\d{1,2})/.exec(d);
+  if(m) return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0');
+  return '0000-00-00';
+}
+function ledgerLabel(r){
+  if(/建仓/.test(r.note||'')) return '建仓';
+  if(r.side==='sell') return r.type==='基金'?'赎回':'减仓';
+  if(r.side==='buy')  return r.type==='基金'?'申购':'加仓';
+  return '其他';
+}
+function ledgerBuild(positions, funds){
+  const rows=[];
+  (positions||[]).forEach(p=>{
+    (p.trades||[]).forEach(t=>rows.push({date:t.date,side:t.side,price:Number(t.price),shares:Number(t.shares),note:t.note||'',type:'持仓',account:'股票账户',name:p.name,code:p.code}));
+  });
+  (funds||[]).forEach(f=>{
+    (f.trades||[]).forEach(t=>rows.push({date:t.date,side:t.side,price:Number(t.price),shares:Number(t.shares),note:t.note||'',type:'基金',account:f.source||'基金',name:f.name,code:f.code}));
+  });
+  rows.forEach(r=>{ r.amount=(r.price||0)*(r.shares||0); r.dk=ledgerParseDate(r.date); r.label=ledgerLabel(r); });
+  rows.sort((a,b)=>{
+    if(a.dk!==b.dk) return a.dk<b.dk?1:-1;
+    if(a.type!==b.type) return a.type==='持仓'?-1:1;
+    return String(a.code).localeCompare(String(b.code));
+  });
+  LEDGER=rows;
+}
+function ledgerApplyFilter(){
+  const rows=LEDGER.filter(r=>LEDGER_ACCOUNT==='all'||r.account===LEDGER_ACCOUNT);
+  const tb=document.getElementById('ledgerTbody');
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="10" class="empty">该账户暂无交易记录</td></tr>'; }
+  else{
+    tb.innerHTML=rows.map(r=>{
+      const sd=r.side==='sell'?'trade-sell':'trade-buy';
+      const price=Number(r.price||0).toLocaleString('zh-CN',{maximumFractionDigits:6});
+      const sh=Number(r.shares||0).toLocaleString('zh-CN',{maximumFractionDigits:4});
+      const amt='¥'+Number(r.amount||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+      return '<tr><td>'+r.date+'</td><td>'+r.account+'</td><td>'+r.type+'</td><td>'+r.name+'</td><td>'+r.code+'</td><td class="'+sd+'">'+r.label+'</td><td class="num">'+price+'</td><td class="num">'+sh+'</td><td class="amt">'+amt+'</td><td>'+(r.note||'')+'</td></tr>';
+    }).join('');
+  }
+  const buyIn=rows.filter(r=>r.side!=='sell').reduce((s,r)=>s+(r.amount||0),0);
+  const sellOut=rows.filter(r=>r.side==='sell').reduce((s,r)=>s+(r.amount||0),0);
+  const net=buyIn-sellOut;
+  const set=(id,v)=>{const e=document.getElementById(id); if(e)e.textContent=v;};
+  set('lgCount',rows.length);
+  set('lgBuyIn','¥'+buyIn.toLocaleString('zh-CN',{maximumFractionDigits:0}));
+  set('lgSellOut','¥'+sellOut.toLocaleString('zh-CN',{maximumFractionDigits:0}));
+  set('lgNet','¥'+net.toLocaleString('zh-CN',{maximumFractionDigits:0}));
+}
+function ledgerFilterAccount(a){
+  LEDGER_ACCOUNT=a;
+  document.querySelectorAll('#ledgerFilter .sf').forEach(el=>el.classList.toggle('act', el.dataset.account===a));
+  ledgerApplyFilter();
+}
+async function loadLedger(){
+  const tb=document.getElementById('ledgerTbody');
+  if(tb) tb.innerHTML='<tr><td colspan="10" class="empty">加载中…</td></tr>';
+  let positions=null, funds=null;
+  try{
+    const base=(typeof API!=='undefined'&&API)?API:'';
+    if(base){
+      const [pj,fj]=await Promise.all([
+        fetch(base+'/positions.json',{cache:'no-store'}).then(r=>r.json()),
+        fetch(base+'/funds.json',{cache:'no-store'}).then(r=>r.json())
+      ]);
+      positions=pj&&pj.positions; funds=fj&&fj.funds;
+    }
+  }catch(e){ positions=null; funds=null; }
+  if(!positions&&!funds){
+    positions=(typeof HOLDINGS!=='undefined')?HOLDINGS:null;
+    funds=(typeof FUNDS!=='undefined')?FUNDS:null;
+  }
+  if(!positions&&!funds){ if(tb) tb.innerHTML='<tr><td colspan="10" class="empty">无交易数据</td></tr>'; return; }
+  ledgerBuild(positions, funds);
+  const accts=['all'].concat(Array.from(new Set(LEDGER.map(r=>r.account))));
+  const fEl=document.getElementById('ledgerFilter');
+  if(fEl) fEl.innerHTML=accts.map(a=>'<span class="sf'+(a==='all'?' act':'')+'" data-account="'+a+'" onclick="ledgerFilterAccount(\''+a+'\')">'+(a==='all'?'全部':a)+'</span>').join('');
+  ledgerApplyFilter();
+  const up=document.getElementById('updatetimeL'); if(up) up.textContent='数据 '+new Date().toLocaleString('zh-CN',{hour12:false});
+  const clk=document.getElementById('clockL'); if(clk) clk.textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false});
+}
+
 renderFundSrcFilter();
 renderFunds(false);
 refreshFunds();
 setInterval(refreshFunds,60000);
+loadLedger();
 </script>
 <div class="kline-modal" id="klineModal" onclick="if(event.target===this)closeKline()">
   <div class="kline-dialog">
