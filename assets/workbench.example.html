@@ -378,7 +378,7 @@ function switchTab(name){
 const fmt=(n,d=2)=> n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d});
 const fmtCost=(n)=> n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:4});
 // 净值按真实位数显示：有原始字符串(东方财富返回的真实小数位)优先用，否则最多4位
-const fmtRaw=(n,s)=> (s!=null&&String(s)!=='')?String(s):(n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:4}));
+const fmtRaw=(n,s,d=null)=> (s!=null&&String(s)!=='')?String(s):(n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN', d!=null?{minimumFractionDigits:d,maximumFractionDigits:Math.max(d,4)}:{maximumFractionDigits:4}));
 // 净值日期 YYYY-MM-DD -> M/D（如 2026-08-07 -> 8/7）
 const fmtNavDate=(s)=>{ if(!s)return ''; const m=/(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); return m?parseInt(m[2],10)+'/'+parseInt(m[3],10):s; };
 const cls=(n)=> n>0?'up':(n<0?'down':'flat');
@@ -426,7 +426,7 @@ async function refreshHoldings(){
     const p=data[h.market+h.code];
     if(p){
       const price=parseFloat(p[3]),prev=parseFloat(p[4]);
-      if(price>0&&prev>0){h.price=price;h.prevClose=prev;h.dayPct=(price-prev)/prev*100;ok=true;}
+      if(price>0&&prev>0){h.price=price;h.prevClose=prev;h.price_raw=p[3];h.prev_raw=p[4];h.dayPct=(price-prev)/prev*100;ok=true;}
     }
   });
   lastHoldingsOK=ok;
@@ -532,7 +532,7 @@ function renderHoldings(ok){
       (h.realized?('<div class="realized '+cls(h.realized)+'">已实现'+sign(h.realized)+'¥'+fmt(Math.abs(h.realized),0)+'</div>'):'')+
       '<div class="khint">点击看K线 ▸</div></td>'+
       '<td>'+fmt(h.shares,0)+'</td>'+
-      '<td class="'+cls(h.price-h.prevClose)+'">'+fmt(h.price)+'</td>'+
+      '<td class="'+cls(h.price-h.prevClose)+'">'+fmtRaw(h.price,h.price_raw,2)+'</td>'+
       '<td class="'+cls(h.dayPct)+'">'+sign(h.dayPct)+fmt(h.dayPct,2)+'%</td>'+
       '<td>'+fmtCost(h.cost)+'</td>'+
       '<td class="'+cls(h.pnlPct)+'">'+sign(h.pnlPct)+fmt(h.pnlPct,2)+'%</td>'+
