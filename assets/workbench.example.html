@@ -222,6 +222,110 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 .hint{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px}
 .mnote{font-size:12px;color:var(--red);margin-top:8px;display:none}
 #toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none}
+@media(max-width:880px){
+  body{padding:12px 12px 36px;font-size:15px}
+  /* Tab 横向滚动，避免挤压 */
+  .tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;padding:9px 16px;font-size:14px}
+  /* 头部纵向堆叠 */
+  header{flex-direction:column;align-items:flex-start;gap:8px}
+  .meta{flex-wrap:wrap;gap:10px;font-size:11px}
+  button.refresh,.btn-add{padding:8px 15px;font-size:13px}
+  /* 概览卡片 2 列（已有媒体规则）加大留白 */
+  .overview{gap:10px}
+  .stat{padding:12px 14px}
+  .stat .value{font-size:21px}
+  .panel-title{font-size:15px;flex-wrap:wrap;gap:8px}
+  .panel-title .btn-add,.panel-title .refresh{margin-left:0}
+
+  /* 表格 → 卡片 */
+  .table-wrap{overflow-x:visible}
+  table,table.fund-platform-summary{min-width:0 !important;display:block;border-radius:14px}
+  table tbody,table.fund-platform-summary tbody{display:block}
+  table thead,table.fund-platform-summary thead{display:none}
+  table tbody tr,table.fund-platform-summary tbody tr{
+    display:block;margin-bottom:14px;background:var(--panel);
+    border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    box-shadow:0 2px 12px rgba(0,0,0,.28)}
+  table tbody tr:nth-child(even){background:var(--panel)}
+  table tbody td,table.fund-platform-summary tbody td{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    width:100% !important;text-align:right !important;white-space:normal;
+    padding:10px 14px;border-bottom:1px solid var(--border);font-size:14px}
+  table tbody tr td:last-child,table.fund-platform-summary tbody tr td:last-child{border-bottom:none}
+  /* 行内标签（列名:值） */
+  table tbody td::before,table.fund-platform-summary tbody td::before{
+    flex:0 0 38%;max-width:44%;text-align:left;color:var(--muted);
+    font-size:12px;font-weight:600;line-height:1.4;content:""}
+
+  /* 持仓表 */
+  #tbody td:nth-child(2)::before{content:"股数"}
+  #tbody td:nth-child(3)::before{content:"现价"}
+  #tbody td:nth-child(4)::before{content:"今日"}
+  #tbody td:nth-child(5)::before{content:"成本"}
+  #tbody td:nth-child(6)::before{content:"浮盈%"}
+  #tbody td:nth-child(7)::before{content:"浮盈额"}
+  #tbody td:nth-child(8)::before{content:"市值"}
+  #tbody td:nth-child(9)::before{content:"距支撑位"}
+  #tbody td:nth-child(10)::before{content:"距压力位"}
+  #tbody td:nth-child(11)::before{content:"意图"}
+  #tbody td:nth-child(12)::before{content:"状态"}
+  /* 名称列作为卡片头 */
+  #tbody td:nth-child(1),#fundTbody td:nth-child(1){
+    display:block;background:var(--panel2);padding:12px 14px}
+  #tbody td:nth-child(1)::before,#fundTbody td:nth-child(1)::before{display:none}
+  #tbody td:nth-child(1) .name{font-size:15px}
+  .del-btn,.sell-btn,.adj-btn,.flow-btn{font-size:12px;padding:2px 8px;margin-top:4px}
+
+  /* 基金表 */
+  #fundTbody td:nth-child(2)::before{content:"份额"}
+  #fundTbody td:nth-child(3)::before{content:"净值"}
+  #fundTbody td:nth-child(4)::before{content:"今日"}
+  #fundTbody td:nth-child(5)::before{content:"成本净值"}
+  #fundTbody td:nth-child(6)::before{content:"浮盈%"}
+  #fundTbody td:nth-child(7)::before{content:"浮盈额"}
+  #fundTbody td:nth-child(8)::before{content:"市值"}
+  #fundTbody td:nth-child(9)::before{content:"类型"}
+  #fundTbody td:nth-child(10)::before{content:"意图"}
+  #fundTbody td:nth-child(11)::before{content:"来源"}
+
+  /* 整体交易记录表 */
+  #ledgerTbody td:nth-child(1)::before{content:"日期"}
+  #ledgerTbody td:nth-child(2)::before{content:"账户/平台"}
+  #ledgerTbody td:nth-child(3)::before{content:"类型"}
+  #ledgerTbody td:nth-child(4)::before{content:"标的"}
+  #ledgerTbody td:nth-child(5)::before{content:"代码"}
+  #ledgerTbody td:nth-child(6)::before{content:"方向"}
+  #ledgerTbody td:nth-child(7)::before{content:"成交价"}
+  #ledgerTbody td:nth-child(8)::before{content:"数量"}
+  #ledgerTbody td:nth-child(9)::before{content:"金额"}
+  #ledgerTbody td:nth-child(10)::before{content:"备注"}
+
+  /* 平台汇总表：首列做卡片头 */
+  table.fund-platform-summary tbody td:nth-child(1){background:var(--panel2);font-weight:700}
+  table.fund-platform-summary tbody td:nth-child(2)::before{content:"总市值"}
+  table.fund-platform-summary tbody td:nth-child(3)::before{content:"持有收益"}
+  table.fund-platform-summary tbody td:nth-child(4)::before{content:"收益率"}
+  table.fund-platform-summary tbody td:nth-child(5)::before{content:"今日涨跌"}
+  table.fund-platform-summary tbody td:nth-child(6)::before{content:"基金数"}
+
+  /* 交易流水弹窗表 */
+  .trades-table{min-width:0 !important;display:block}
+  .trades-table thead{display:none}
+  .trades-table tbody tr{display:block;margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .trades-table tbody td{display:flex;justify-content:space-between;gap:10px;width:100% !important;padding:8px 12px;border-bottom:1px solid var(--border);white-space:normal}
+  .trades-table tbody tr td:last-child{border-bottom:none}
+  .trades-table tbody td::before{flex:0 0 36%;text-align:left;color:var(--muted);font-size:12px;font-weight:600;content:""}
+  .trades-table tbody td:nth-child(1)::before{content:"日期"}
+  .trades-table tbody td:nth-child(2)::before{content:"方向"}
+  .trades-table tbody td:nth-child(3)::before{content:"价格"}
+  .trades-table tbody td:nth-child(4)::before{content:"数量"}
+  .trades-table tbody td:nth-child(5)::before{content:"备注"}
+
+  /* K线弹窗段按钮换行 */
+  .kseg{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
@@ -751,13 +855,16 @@ function loadK(type){
         body.innerHTML=buildIntradaySVG(d.points);
       }).catch(e=>{body.innerHTML='<div class="kerr">分时获取失败：'+e+'</div>';});
   }else{
-    const klt=type==='w'?'w':'d';
-    const lmt=type==='w'?200:340;
-    const disp=type==='w'?60:90;
+    const kltMap={'d':'d','w':'w','30':'30','60':'60'};
+    const klt=kltMap[type]||'d';
+    const lmtMap={'w':200,'30':160,'60':120,'d':340};
+    const lmt=lmtMap[type]||340;
+    const dispMap={'w':60,'30':70,'60':48,'d':90};
+    const disp=dispMap[type]||90;
     fetch(API+'/api/kline?market='+curMK+'&code='+curCode+'&klt='+klt+'&lmt='+lmt,{cache:'no-store'})
       .then(r=>r.json()).then(d=>{
         if(!d.klines||!d.klines.length){body.innerHTML='<div class="kerr">暂无K线数据</div>';return;}
-        body.innerHTML=buildKlineSVG(d.klines,disp);
+        body.innerHTML=buildKlineSVG(d.klines,disp,type);
       }).catch(e=>{body.innerHTML='<div class="kerr">K线获取失败：'+e+'</div>';});
   }
 }
@@ -793,7 +900,7 @@ function buildIntradaySVG(pts){
   svg+='</svg>';
   return svg;
 }
-function buildKlineSVG(data,display){
+function buildKlineSVG(data,display,period){
   const DISPLAY=Math.min(display||90,data.length);   // 蜡烛图显示最后 display 根（日K=90，周K=60）
   const view=data.slice(-DISPLAY);
   const start=data.length-DISPLAY;
@@ -831,8 +938,9 @@ function buildKlineSVG(data,display){
   if(has250)svg+='<text x="'+(padL+196)+'" y="'+(padT-5)+'" fill="#597ef7" font-size="11">MA250</text>';
   const last=view[n-1];
   svg+='<text x="'+(padL+4)+'" y="'+(Y(last.c)+4)+'" fill="#e6edf3" font-size="11">收 '+last.c.toFixed(2)+'</text>';
-  const stepIdx=Math.max(1,Math.floor(n/6));
-  for(let i=0;i<n;i+=stepIdx){svg+='<text x="'+X(i)+'" y="'+(H-6)+'" fill="#8b949e" font-size="10" text-anchor="middle">'+view[i].date.slice(5)+'</text>';}
+  const lblFor=d=>((period==='30'||period==='60')?(d.date.slice(5,16)):(d.date.slice(5)));  // 分钟线显示 "MM-DD HH:mm"
+  const stepIdx=Math.max(1,Math.floor(n/(period==='30'||period==='60'?5:6)));
+  for(let i=0;i<n;i+=stepIdx){svg+='<text x="'+X(i)+'" y="'+(H-6)+'" fill="#8b949e" font-size="10" text-anchor="middle">'+lblFor(view[i])+'</text>';}
   svg+='</svg>';
   return svg;
 }
@@ -1402,6 +1510,8 @@ loadLedger();
         <button class="kbtn" data-k="m" onclick="loadK('m')">分时</button>
         <button class="kbtn active" data-k="d" onclick="loadK('d')">日K</button>
         <button class="kbtn" data-k="w" onclick="loadK('w')">周K</button>
+        <button class="kbtn" data-k="30" onclick="loadK('30')">30分</button>
+        <button class="kbtn" data-k="60" onclick="loadK('60')">1时</button>
       </span>
       <span class="kline-close" onclick="closeKline()">&times;</span></div>
     <div class="kline-body" id="klineBody"></div>
