@@ -188,6 +188,15 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 .modal-box h3{margin:0 0 14px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
 .modal-box .x{cursor:pointer;color:var(--muted);font-size:21px;line-height:1}
 .modal-box .x:hover{color:var(--text)}
+.trades-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.trades-table th,.trades-table td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.trades-table th{color:var(--muted);font-weight:600;font-size:12px}
+.trades-table tr:last-child td{border-bottom:none}
+.trade-buy{color:#ff4d4f;font-weight:600}
+.trade-sell{color:#00b96b;font-weight:600}
+.flow-btn{cursor:pointer;color:var(--muted);font-size:12px;margin-left:6px;padding:1px 6px;border:1px solid var(--border);border-radius:6px;white-space:nowrap}
+.flow-btn:hover{color:var(--text);border-color:var(--muted)}
+.trades-empty{color:var(--muted);padding:18px 0;text-align:center}
 .fld{margin-bottom:11px}
 .fld label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .fld input,.fld select{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:8px 10px;font-size:13px;box-sizing:border-box;outline:none}
@@ -399,10 +408,10 @@ tick(); setInterval(tick,1000);
 // ===== Holdings Data =====
 const HOLDINGS=[
   // ⚠️ 示例数据：以下份额/成本/止损止盈均为虚构，请替换为你自己的持仓
-  {code:'510300',market:'sh',name:'沪深300ETF',  shares:50000, cost:4.000,sl:3.80, tp:4.30, tpStatus:'active',    intent:'长持',     snap:4.100},
-  {code:'159915',market:'sz',name:'创业板ETF',   shares:80000, cost:2.000,sl:1.86, tp:2.20, tpStatus:'active',    intent:'中线',     snap:1.980},
-  {code:'512760',market:'sh',name:'半导体50ETF', shares:1000,  cost:1.200,sl:1.05, tp:1.35, tpStatus:'active',    intent:'卫星仓',   snap:1.250},
-  {code:'600519',market:'sh',name:'贵州茅台',    shares:100,   cost:1680.0,sl:1600,tp:1850,tpStatus:'active',     intent:'长持',     snap:1720.0},
+  {code:'510300',market:'sh',name:'沪深300ETF',  shares:50000, cost:4.000,sl:3.80, tp:4.30, tpStatus:'active',    intent:'长持',     snap:4.100,trades:[{date:'建仓(示例)',side:'buy',price:4.000,shares:50000,note:'初始建仓'}]},
+  {code:'159915',market:'sz',name:'创业板ETF',   shares:80000, cost:2.000,sl:1.86, tp:2.20, tpStatus:'active',    intent:'中线',     snap:1.980,trades:[{date:'建仓(示例)',side:'buy',price:2.000,shares:80000,note:'初始建仓'}]},
+  {code:'512760',market:'sh',name:'半导体50ETF', shares:1000,  cost:1.200,sl:1.05, tp:1.35, tpStatus:'active',    intent:'卫星仓',   snap:1.250,trades:[{date:'建仓(示例)',side:'buy',price:1.200,shares:1000,note:'初始建仓'}]},
+  {code:'600519',market:'sh',name:'贵州茅台',    shares:100,   cost:1680.0,sl:1600,tp:1850,tpStatus:'active',     intent:'长持',     snap:1720.0,trades:[{date:'建仓(示例)',side:'buy',price:1680.0,shares:100,note:'初始建仓'}]},
 ];
 HOLDINGS.forEach(h=>{h.price=h.snap;h.prevClose=h.snap;h.dayPct=0;if(h.realized==null)h.realized=0;});
 
@@ -528,6 +537,7 @@ function renderHoldings(ok){
         (h.manual?'<span class="del-btn" onclick="event.stopPropagation();delManual(\''+h.market+'\',\''+h.code+'\')" title="删除该录入">✕</span>':'')+
         '<span class="sell-btn" onclick="event.stopPropagation();openSell(\''+h.market+'\',\''+h.code+'\',\''+h.name+'\','+h.shares+')" title="记录卖出/减仓">卖出</span>'+
         '<span class="adj-btn" onclick="event.stopPropagation();openAdjust(\''+h.market+'\',\''+h.code+'\',\''+h.name+'\','+h.cost+','+h.shares+')" title="调整成本价/股数">调整</span>'+
+        '<span class="flow-btn" onclick="event.stopPropagation();openTrades(\'stock\',\''+h.code+'\',\''+h.name+'\')" title="查看加减仓流水">📜 流水</span>'+
       '</div><div class="code">'+h.market+h.code+'</div>'+
       (h.realized?('<div class="realized '+cls(h.realized)+'">已实现'+sign(h.realized)+'¥'+fmt(Math.abs(h.realized),0)+'</div>'):'')+
       '<div class="khint">点击看K线 ▸</div></td>'+
@@ -643,6 +653,39 @@ function openKline(market,code,name){
   loadK('d');
 }
 function closeKline(){document.getElementById('klineModal').classList.remove('show');}
+
+// ===== 交易流水弹窗（个人持仓 + 养鸡场共用）=====
+// 页面初始化时把 positions.json / funds.json 的 trades 合并到 HOLDINGS / FUNDS
+function attachTrades(){
+  fetch(API+'/positions.json',{cache:'no-store'}).then(r=>r.json()).then(j=>{
+    const map={}; (j.positions||[]).forEach(p=>{ if(p.trades) map[p.code]=p.trades; });
+    HOLDINGS.forEach(h=>{ if(map[h.code]) h.trades=map[h.code]; });
+  }).catch(()=>{});
+  fetch(API+'/funds.json',{cache:'no-store'}).then(r=>r.json()).then(j=>{
+    const map={}; (j.funds||[]).forEach(f=>{ if(f.trades) map[f.code]=f.trades; });
+    FUNDS.forEach(f=>{ if(map[f.code]) f.trades=map[f.code]; });
+  }).catch(()=>{});
+}
+// kind: 'stock' 个人持仓 | 'fund' 场外基金
+function openTrades(kind, code, name){
+  let obj=null;
+  if(kind==='stock') obj=HOLDINGS.find(h=>h.code===code);
+  else obj=FUNDS.find(f=>f.code===code);
+  const trades=(obj&&obj.trades)||[];
+  document.getElementById('tradesTitle').textContent='交易流水  '+name+'  ('+code+')';
+  const body=document.getElementById('tradesBody');
+  if(!trades.length){ body.innerHTML='<div class="trades-empty">暂无加减仓记录</div>'; return; }
+  body.innerHTML='<table class="trades-table"><thead><tr><th>日期</th><th>方向</th><th>价格</th><th>数量</th><th>备注</th></tr></thead><tbody>'+
+    trades.map(t=>{
+      const sd=t.side==='sell'?'trade-sell':'trade-buy';
+      const sl=t.side==='sell'?'卖出 / 赎回':'买入 / 申购';
+      const p=t.price!=null?Number(t.price).toLocaleString('zh-CN',{maximumFractionDigits:6}):'-';
+      const sh=t.shares!=null?Number(t.shares).toLocaleString('zh-CN',{maximumFractionDigits:4}):'-';
+      return '<tr><td>'+(t.date||'-')+'</td><td class="'+sd+'">'+sl+'</td><td>'+p+'</td><td>'+sh+'</td><td>'+(t.note||'')+'</td></tr>';
+    }).join('')+'</tbody></table>';
+  document.getElementById('tradesModal').classList.add('show');
+}
+function closeTrades(){document.getElementById('tradesModal').classList.remove('show');}
 function loadK(type){
   curType=type;
   document.querySelectorAll('#kSeg .kbtn').forEach(b=>b.classList.toggle('active',b.dataset.k===type));
@@ -742,7 +785,8 @@ function buildKlineSVG(data,display){
 }
 document.addEventListener('click',e=>{const td=e.target.closest('td.clickable');if(td)openKline(td.dataset.m,td.dataset.c,td.dataset.n);});
 const kmEl=document.getElementById('klineModal'); if(kmEl) kmEl.addEventListener('click',e=>{if(e.target.id==='klineModal')closeKline();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeKline();closeAdd();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeKline();closeAdd();closeTrades();}});
+// 示例版：演示数据已内置 trades 基线，不调用 attachTrades（避免 fetch 到真实 positions.json/funds.json 暴露真实持仓）
 
 // ===== 手动录入仓位（localStorage 持久化）=====
 const LS_KEY='wb_manual_positions';
@@ -921,11 +965,11 @@ function showToast(msg){
 // ===== 养鸡场 Funds (场外开放式基金) =====
 const FUNDS=[
 // ⚠️ 示例数据：以下份额/成本净值均为虚构，source 用于区分销售平台，请替换为你自己的场外基金
-{code:"110022",name:"易方达消费行业股票",shares:10000,cost:2.500,snap:2.900,type:"行业主题",source:"平台A",intent:"",realized:0},
-{code:"161725",name:"招商中证白酒指数(LOF)A",shares:20000,cost:0.600,snap:0.560,type:"行业主题",source:"平台A",intent:"",realized:0},
-{code:"000001",name:"华夏成长混合",shares:15000,cost:1.200,snap:1.340,type:"混合型",source:"平台B",intent:"",realized:0},
-{code:"519674",name:"银河创新成长混合A",shares:2000,cost:11.000,snap:12.760,type:"混合型",source:"平台B",intent:"",realized:0},
-{code:"007339",name:"易方达中短期美元债(QDII)C",shares:5000,cost:1.800,snap:1.890,type:"QDII",source:"平台B",intent:"",realized:0},
+{code:"110022",name:"易方达消费行业股票",shares:10000,cost:2.500,snap:2.900,type:"行业主题",source:"平台A",intent:"",realized:0,trades:[{date:'建仓(示例)',side:'buy',price:2.500,shares:10000,note:'初始建仓'}]},
+{code:"161725",name:"招商中证白酒指数(LOF)A",shares:20000,cost:0.600,snap:0.560,type:"行业主题",source:"平台A",intent:"",realized:0,trades:[{date:'建仓(示例)',side:'buy',price:0.600,shares:20000,note:'初始建仓'}]},
+{code:"000001",name:"华夏成长混合",shares:15000,cost:1.200,snap:1.340,type:"混合型",source:"平台B",intent:"",realized:0,trades:[{date:'建仓(示例)',side:'buy',price:1.200,shares:15000,note:'初始建仓'}]},
+{code:"519674",name:"银河创新成长混合A",shares:2000,cost:11.000,snap:12.760,type:"混合型",source:"平台B",intent:"",realized:0,trades:[{date:'建仓(示例)',side:'buy',price:11.000,shares:2000,note:'初始建仓'}]},
+{code:"007339",name:"易方达中短期美元债(QDII)C",shares:5000,cost:1.800,snap:1.890,type:"QDII",source:"平台B",intent:"",realized:0,trades:[{date:'建仓(示例)',side:'buy',price:1.800,shares:5000,note:'初始建仓'}]},
 ];
 const LS_FUND_MANUAL='wb_fund_manual';
 const LS_FUND_SELLS='wb_fund_sells';
@@ -1067,6 +1111,7 @@ function renderFunds(ok){
           (f.manual?'<span class="del-btn" onclick="delFundManual(\''+f.code+'\')" title="删除该录入">✕</span>':'')+
           '<span class="sell-btn" onclick="openFundSell(\''+f.code+'\',\''+f.name+'\','+f.shares+')" title="记录赎回/减仓">赎回</span>'+
           '<span class="adj-btn" onclick="openFundAdjust(\''+f.code+'\',\''+f.name+'\','+f.cost+','+f.shares+')" title="调整成本净值/份额">调整</span>'+
+          '<span class="flow-btn" onclick="event.stopPropagation();openTrades(\'fund\',\''+f.code+'\',\''+f.name+'\')" title="查看加减仓流水">📜 流水</span>'+
         '</div><div class="code">'+f.code+'</div>'+
         (f.realized?('<div class="realized '+cls(f.realized)+'">已实现'+sign(f.realized)+'¥'+fmt(Math.abs(f.realized),0)+'</div>'):'')+
         '</td>'+
@@ -1220,6 +1265,14 @@ setInterval(refreshFunds,60000);
       </span>
       <span class="kline-close" onclick="closeKline()">&times;</span></div>
     <div class="kline-body" id="klineBody"></div>
+  </div>
+</div>
+
+<!-- ===== 交易流水弹窗 ===== -->
+<div class="modal" id="tradesModal" onclick="if(event.target===this)closeTrades()">
+  <div class="modal-box" style="width:540px;max-width:94vw">
+    <h3><span id="tradesTitle">交易流水</span><span class="x" onclick="closeTrades()">&times;</span></h3>
+    <div id="tradesBody"></div>
   </div>
 </div>
 
