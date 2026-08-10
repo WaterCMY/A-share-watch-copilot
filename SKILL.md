@@ -2,7 +2,7 @@
 name: a-share-watch-copilot
 slug: a-share-watch-copilot
 description: 个人 A股/港股盯盘智能副驾（信息驱动、人在回路、非量化、非自动下单）。当用户要搭建/运营一个盯盘 agent、设计持仓管理体系、写 positions.json、跟踪场外开放式基金、设置价格提醒、配置盘前/盘后/盘中监控自动化、生成信息整理模板或盘后总结时使用。覆盖五层架构、持仓与基金 JSON schema、数据源选型（westock-mcp / westock-data CLI / 东财净值）、8 个自动化任务模板、本地看盘工作台、报告结构与踩坑经验。
-version: 1.2.0
+version: 1.2.1
 agent_created: true
 displayName: "盯盘副驾"
 ---
