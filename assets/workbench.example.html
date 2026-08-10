@@ -377,6 +377,8 @@ function switchTab(name){
 // ===== Utilities =====
 const fmt=(n,d=2)=> n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d});
 const fmtCost=(n)=> n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:4});
+// 净值按真实位数显示：有原始字符串(东方财富返回的真实小数位)优先用，否则最多4位
+const fmtRaw=(n,s)=> (s!=null&&String(s)!=='')?String(s):(n==null||isNaN(n)?'--':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:4}));
 const cls=(n)=> n>0?'up':(n<0?'down':'flat');
 const sign=(n)=> n>0?'+':'';
 
@@ -976,7 +978,7 @@ async function refreshFunds(){
   let ok=false;
   FUNDS.forEach(f=>{
     const p=data[f.code];
-    if(p&&p.price>0){f.price=p.price;f.prevClose=p.prevClose;f.dayPct=p.dayPct||0;f.navDate=p.jzrq;f.gztime=p.gztime;ok=true;}
+    if(p&&p.price>0){f.price=p.price;f.prevClose=p.prevClose;f.price_raw=p.price_raw;f.prev_raw=p.prev_raw;f.dayPct=p.dayPct||0;f.navDate=p.jzrq;f.gztime=p.gztime;ok=true;}
     else{f.price=f.snap||f.price;f.prevClose=f.snap||f.prevClose;f.dayPct=0;}
   });
   lastFundsOK=ok;
@@ -1067,7 +1069,7 @@ function renderFunds(ok){
         (f.realized?('<div class="realized '+cls(f.realized)+'">已实现'+sign(f.realized)+'¥'+fmt(Math.abs(f.realized),0)+'</div>'):'')+
         (f.navDate?('<div class="khint">净值日期 '+f.navDate+'</div>'):'')+'</td>'+
         '<td>'+fmt(f.shares,0)+'</td>'+
-        '<td class="'+cls(f.price-f.prevClose)+'">'+fmt(f.price,4)+'</td>'+
+        '<td class="'+cls(f.price-f.prevClose)+'">'+fmtRaw(f.price,f.price_raw)+'</td>'+
         '<td class="'+cls(f.dayPct)+'">'+sign(f.dayPct)+fmt(f.dayPct,2)+'%</td>'+
         '<td>'+fmtCost(f.cost)+'</td>'+
         '<td class="'+cls(f.pnlPct)+'">'+sign(f.pnlPct)+fmt(f.pnlPct,2)+'%</td>'+
