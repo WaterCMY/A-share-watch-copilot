@@ -222,19 +222,19 @@ class H(BaseHTTPRequestHandler):
             if not codes:
                 self._send(400, 'missing codes')
                 return
-        # 主源：腾讯 qt.gtimg.cn（实测在服务端独立进程下稳定可达）。
-        # 注：东财 push2 在独立服务端被网络出口 Reset，无法作兜底；抗掉线靠进程常驻+重试实现。
-        last = None
-        for _ in range(2):
-            try:
-                url = QT_BASE + codes + '&_=' + str(int(time.time()))
-                data = self._proxy(url, 'gbk')
-                self._send(200, data, 'text/plain; charset=utf-8')
-                return
-            except Exception as e:
-                last = e
-        self._send(502, 'quotes failed: ' + str(last))
-        return
+            # 主源：腾讯 qt.gtimg.cn（实测在服务端独立进程下稳定可达）。
+            # 注：东财 push2 在独立服务端被网络出口 Reset，无法作兜底；抗掉线靠进程常驻+重试实现。
+            last = None
+            for _ in range(2):
+                try:
+                    url = QT_BASE + codes + '&_=' + str(int(time.time()))
+                    data = self._proxy(url, 'gbk')
+                    self._send(200, data, 'text/plain; charset=utf-8')
+                    return
+                except Exception as e:
+                    last = e
+            self._send(502, 'quotes failed: ' + str(last))
+            return
 
         if u.path == '/api/em':
             url = EM_BASE + '?' + u.query
