@@ -14,6 +14,7 @@ import os
 import json
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from concurrent.futures import ThreadPoolExecutor
 
 PORT = 8801
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -30,16 +31,24 @@ OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 class H(BaseHTTPRequestHandler):
     def _send(self, code, body, ctype='text/plain; charset=utf-8'):
+        if isinstance(body, str):
+            body = body.encode('utf-8')
+        if body is None:
+            body = b''
         self.send_response(code)
         self.send_header('Content-Type', ctype)
+        self.send_header('Content-Length', str(len(body)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', '*')
         self.send_header('Cache-Control', 'no-store')
         self.end_headers()
-        if isinstance(body, str):
-            body = body.encode('utf-8')
-        self.wfile.write(body)
+        if body:
+            try:
+                self.wfile.write(body)
+                self.wfile.flush()
+            except Exception:
+                pass
 
     def do_OPTIONS(self):
         self._send(200, '')
@@ -124,7 +133,7 @@ class H(BaseHTTPRequestHandler):
     def fetch_kline(self, market, code, klt, lmt):
         """代理新浪K线(money.finance.sina.com.cn)。market: sh/sz；返回结构化 {name,code,klines:[{date,o,c,h,l,v}]}。
         注：东财 push2his 在当前环境不可达，故改用新浪源（ETF/股票均支持，symbol=market+code）。"""
-        scale_map = {'d': 240, 'w': 1200, 'm': 10200, '101': 240, '102': 1200}
+        scale_map = {'d': 240, 'w': 1200, 'm': 10200, '101': 240, '102': 1200, '30': 30, '60': 60}  # 30分 / 60分(1时)线
         scale = scale_map.get(klt, 240)
         symbol = market + code
         params = urllib.parse.urlencode({
@@ -136,7 +145,7 @@ class H(BaseHTTPRequestHandler):
         out = []
         for d in arr:
             out.append({
-                'date': str(d.get('day', '')).split(' ')[0],
+                'date': (str(d.get('day', '')) if klt in ('30', '60') else str(d.get('day', '')).split(' ')[0]),  # 分钟线保留时间
                 'o': float(d.get('open', 0)),
                 'c': float(d.get('close', 0)),
                 'h': float(d.get('high', 0)),
@@ -183,11 +192,14 @@ class H(BaseHTTPRequestHandler):
         if not lst:
             return None
         latest = lst[0]
-        price = float(latest.get('DWJZ') or 0)
+        price_raw = str(latest.get('DWJZ', ''))
+        price = float(price_raw or 0)
         jzrq = latest.get('FSRQ', '')
         if len(lst) > 1:
-            prev = float(lst[1].get('DWJZ') or 0)
+            prev_raw = str(lst[1].get('DWJZ', ''))
+            prev = float(prev_raw or 0)
         else:
+            prev_raw = price_raw
             prev = price
         day_pct = ((price - prev) / prev * 100) if prev > 0 else 0
         return {
@@ -197,6 +209,7 @@ class H(BaseHTTPRequestHandler):
             'gztime': '',
             'jzrq': jzrq,
             'price': price, 'prevClose': prev, 'dayPct': day_pct,
+            'price_raw': price_raw, 'prev_raw': prev_raw,
             'status': latest.get('SHZT', ''),
         }
 
@@ -209,13 +222,19 @@ class H(BaseHTTPRequestHandler):
             if not codes:
                 self._send(400, 'missing codes')
                 return
+        # 主源：腾讯 qt.gtimg.cn（实测在服务端独立进程下稳定可达）。
+        # 注：东财 push2 在独立服务端被网络出口 Reset，无法作兜底；抗掉线靠进程常驻+重试实现。
+        last = None
+        for _ in range(2):
             try:
-                url = QT_BASE + codes + '&_=' + str(int(__import__('time').time()))
+                url = QT_BASE + codes + '&_=' + str(int(time.time()))
                 data = self._proxy(url, 'gbk')
                 self._send(200, data, 'text/plain; charset=utf-8')
+                return
             except Exception as e:
-                self._send(502, 'proxy error: ' + str(e))
-            return
+                last = e
+        self._send(502, 'quotes failed: ' + str(last))
+        return
 
         if u.path == '/api/em':
             url = EM_BASE + '?' + u.query
@@ -271,21 +290,28 @@ class H(BaseHTTPRequestHandler):
             codes = qs.get('code', [''])[0]
             codes = [c.strip() for c in codes.split(',') if c.strip()]
             if not codes:
-                self._send(400, 'missing code')
+                self._send(400, 'missing code', 'application/json; charset=utf-8')
                 return
             try:
-                out = []
-                for c in codes:
-                    try:
-                        d = self.fetch_fund_nav(c)
-                        if d:
-                            out.append(d)
-                    except Exception:
-                        continue
+                # 并行拉取，避免 40+ 只基金串行叠加 ~10s 触发前端 fetch 超时；
+                # 单只失败不影响整体，最终永远返回合法 JSON 数组（绝不返回空响应体）。
+                results = {}
+                workers = min(10, len(codes)) or 1
+                with ThreadPoolExecutor(max_workers=workers) as ex:
+                    futs = {ex.submit(self.fetch_fund_nav, c): c for c in codes}
+                    for fut in futs:
+                        try:
+                            d = fut.result()
+                            if d:
+                                results[futs[fut]] = d
+                        except Exception:
+                            continue
+                out = [results[c] for c in codes if c in results]  # 保持传入顺序
                 self._send(200, __import__('json').dumps(out, ensure_ascii=False),
                            'application/json; charset=utf-8')
-            except Exception as e:
-                self._send(502, '{"error":"%s"}' % str(e), 'application/json')
+            except Exception:
+                # 任何意外都返回空数组而非空响应体，前端据此走录入价兜底
+                self._send(200, '[]', 'application/json; charset=utf-8')
             return
 
         # 静态文件
@@ -342,29 +368,30 @@ class H(BaseHTTPRequestHandler):
                         'manual': True,
                         'synced_at': now,
                         'realized_pnl': m.get('realized') or 0,
+                        'fee': m.get('fee') or 0,
+                        'trades': m.get('trades') or [],
                     }
 
                 if 'positions' in payload:
-                    # 新契约：完整持仓列表（含手动+基仓，带 manual 标记与 realized）
-                    # 匹配到 base 的仅更新 shares / realized_pnl，保留全部原始元数据（tech/boll/策略等）
-                    # incoming 中不存在的 base 持仓视为清仓/移除，直接丢弃
-                    result = []
-                    for it in payload.get('positions', []):
-                        key = (it.get('market'), it.get('code'))
-                        b = basemap.get(key)
-                        if b is not None:
-                            b = dict(b)
-                            b['shares'] = it.get('shares')
+                    # 新契约：完整持仓列表（含手动+基仓）。
+                    # 合并策略：base 全部保留，仅更新 incoming 中匹配项的 shares/cost/realized；
+                    # incoming 中多出的项（新手动录入）追加；绝不丢弃 base 中已有的持仓。
+                    result = [dict(p) for p in base]
+                    incoming_map = {(it.get('market'), it.get('code')): it
+                                    for it in payload.get('positions', [])}
+                    for p in result:
+                        key = (p.get('market'), p.get('code'))
+                        it = incoming_map.pop(key, None)
+                        if it is not None:
+                            p['shares'] = it.get('shares')
                             if it.get('cost') is not None:
-                                b['cost_price'] = it.get('cost')
-                            r = it.get('realized')
-                            if r:
-                                b['realized_pnl'] = r
-                            elif 'realized_pnl' in b:
-                                del b['realized_pnl']
-                            result.append(b)
-                        else:
-                            result.append(manual_entry(it))
+                                p['cost_price'] = it.get('cost')
+                            if 'realized' in it and it.get('realized') is not None:
+                                p['realized_pnl'] = it.get('realized')
+                            if it.get('trades') is not None:
+                                p['trades'] = it.get('trades')
+                    for it in incoming_map.values():
+                        result.append(manual_entry(it))
                     data['positions'] = result
                     count = len(result)
                 else:
@@ -438,8 +465,16 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def handle(self):
+        # 客户端中途断开（BrokenPipe/ConnectionAborted/Reset）属正常现象，
+        # 捕获以免线程异常上抛刷屏，保证服务常驻。
+        try:
+            super().handle()
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            pass
+
 
 if __name__ == '__main__':
-    srv = ThreadingHTTPServer(('127.0.0.1', PORT), H)
+    srv = ThreadingHTTPServer(('0.0.0.0', PORT), H)
     print('serving on http://localhost:%d' % PORT)
     srv.serve_forever()

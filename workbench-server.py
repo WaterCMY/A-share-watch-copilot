@@ -222,13 +222,19 @@ class H(BaseHTTPRequestHandler):
             if not codes:
                 self._send(400, 'missing codes')
                 return
+        # 主源：腾讯 qt.gtimg.cn（实测在服务端独立进程下稳定可达）。
+        # 注：东财 push2 在独立服务端被网络出口 Reset，无法作兜底；抗掉线靠进程常驻+重试实现。
+        last = None
+        for _ in range(2):
             try:
-                url = QT_BASE + codes + '&_=' + str(int(__import__('time').time()))
+                url = QT_BASE + codes + '&_=' + str(int(time.time()))
                 data = self._proxy(url, 'gbk')
                 self._send(200, data, 'text/plain; charset=utf-8')
+                return
             except Exception as e:
-                self._send(502, 'proxy error: ' + str(e))
-            return
+                last = e
+        self._send(502, 'quotes failed: ' + str(last))
+        return
 
         if u.path == '/api/em':
             url = EM_BASE + '?' + u.query
@@ -362,29 +368,30 @@ class H(BaseHTTPRequestHandler):
                         'manual': True,
                         'synced_at': now,
                         'realized_pnl': m.get('realized') or 0,
+                        'fee': m.get('fee') or 0,
+                        'trades': m.get('trades') or [],
                     }
 
                 if 'positions' in payload:
-                    # 新契约：完整持仓列表（含手动+基仓，带 manual 标记与 realized）
-                    # 匹配到 base 的仅更新 shares / realized_pnl，保留全部原始元数据（tech/boll/策略等）
-                    # incoming 中不存在的 base 持仓视为清仓/移除，直接丢弃
-                    result = []
-                    for it in payload.get('positions', []):
-                        key = (it.get('market'), it.get('code'))
-                        b = basemap.get(key)
-                        if b is not None:
-                            b = dict(b)
-                            b['shares'] = it.get('shares')
+                    # 新契约：完整持仓列表（含手动+基仓）。
+                    # 合并策略：base 全部保留，仅更新 incoming 中匹配项的 shares/cost/realized；
+                    # incoming 中多出的项（新手动录入）追加；绝不丢弃 base 中已有的持仓。
+                    result = [dict(p) for p in base]
+                    incoming_map = {(it.get('market'), it.get('code')): it
+                                    for it in payload.get('positions', [])}
+                    for p in result:
+                        key = (p.get('market'), p.get('code'))
+                        it = incoming_map.pop(key, None)
+                        if it is not None:
+                            p['shares'] = it.get('shares')
                             if it.get('cost') is not None:
-                                b['cost_price'] = it.get('cost')
-                            r = it.get('realized')
-                            if r:
-                                b['realized_pnl'] = r
-                            elif 'realized_pnl' in b:
-                                del b['realized_pnl']
-                            result.append(b)
-                        else:
-                            result.append(manual_entry(it))
+                                p['cost_price'] = it.get('cost')
+                            if 'realized' in it and it.get('realized') is not None:
+                                p['realized_pnl'] = it.get('realized')
+                            if it.get('trades') is not None:
+                                p['trades'] = it.get('trades')
+                    for it in incoming_map.values():
+                        result.append(manual_entry(it))
                     data['positions'] = result
                     count = len(result)
                 else:
@@ -457,6 +464,14 @@ class H(BaseHTTPRequestHandler):
 
     def log_message(self, *a):
         pass
+
+    def handle(self):
+        # 客户端中途断开（BrokenPipe/ConnectionAborted/Reset）属正常现象，
+        # 捕获以免线程异常上抛刷屏，保证服务常驻。
+        try:
+            super().handle()
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            pass
 
 
 if __name__ == '__main__':
