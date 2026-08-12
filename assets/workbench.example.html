@@ -351,6 +351,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
     <button class="refresh" onclick="refreshHoldings()">立即刷新</button>
   </div>
 </header>
+<div id="holdStale" class="gap-banner"></div>
 
 <section class="overview">
   <div class="stat"><div class="label">组合总市值</div><div class="value" id="ovValue">--</div><div class="sub" id="ovValueSub">&nbsp;</div></div>
@@ -533,6 +534,8 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 #page-curve .ccard .v{font-size:18px;font-weight:600}
 #page-curve .chart-wrap{position:relative;margin-top:8px;background:#fff;border:1px solid #ececec;border-radius:10px;padding:8px}
 #page-curve .ctip{position:absolute;pointer-events:none;background:rgba(30,34,40,.92);color:#fff;font-size:12px;line-height:1.6;padding:8px 10px;border-radius:8px;z-index:20;white-space:nowrap}
+#page-curve .gap-banner{display:none;margin:8px 0;padding:8px 12px;border-radius:8px;background:#fff4e5;border:1px solid #ffd9a8;color:#9a5a00;font-size:12.5px;line-height:1.6}
+#page-curve .gap-banner b{color:#c0392b}
 #page-curve .up{color:#e63946}
 #page-curve .down{color:#2a9d3a}
 </style>
@@ -541,6 +544,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
   <div class="title">📈 账户资金曲线 <span class="badge">每日总市值 · 近90交易日</span></div>
   <div class="meta"><span id="curveUpdated">点击本标签加载…</span></div>
 </header>
+<div id="curveGap" class="gap-banner"></div>
 <div class="ccards">
   <div class="ccard"><div class="k">最新市值</div><div class="v" id="cv-latest">--</div></div>
   <div class="ccard"><div class="k">区间收益(成本口径)</div><div class="v" id="cv-ret">--</div></div>
@@ -566,6 +570,12 @@ function loadCurve(){
 function renderCurve(d){
   const s=d.series; if(!s||!s.length) return;
   const last=s[s.length-1];
+  const gapEl=document.getElementById('curveGap');
+  if(d.gaps && d.gaps.length){
+    const names=d.gaps.map(g=>g.name+'('+g.code+')').join('、');
+    gapEl.style.display='block';
+    gapEl.innerHTML='⚠️ <b>'+d.gaps.length+' 只标的</b>历史行情抓取失败，已用快照价（'+d.gaps[0].proxy+'）兜底，对应市值可能<b>低估/失真</b>：'+names;
+  } else if(gapEl){ gapEl.style.display='none'; }
   document.getElementById('cv-latest').textContent='¥'+fmt(last.value,0);
   const re=document.getElementById('cv-ret');
   re.textContent=(last.pnl>=0?'+':'-')+'¥'+fmt(Math.abs(last.pnl),0)+' ('+(last.pnl_pct>=0?'+':'')+last.pnl_pct+'%)';
@@ -774,6 +784,11 @@ async function refreshHoldings(){
   lastHoldingsOK=ok;
   renderHoldings(ok);
   renderConcentration();
+  const sb=document.getElementById('holdStale');
+  if(sb){
+    if(ok){ sb.style.display='none'; }
+    else { sb.style.display='block'; sb.innerHTML='⚠️ 实时行情获取失败（腾讯直连与本地代理均不可达），当前显示的为<b>最后一次成功获取或存档快照价，可能非实时</b>，请勿据此交易。'; }
+  }
 }
 
 // ===== P1-4 组合集中度诊断 =====
