@@ -62,21 +62,23 @@ button.refresh:hover{border-color:var(--accent)}
 .empty{color:var(--muted);font-size:13px;padding:14px;background:var(--panel);border-radius:10px}
 
 /* ===== Table ===== */
-table{width:100%;min-width:1120px;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;table-layout:fixed}
+table{width:100%;min-width:1180px;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;table-layout:fixed}
 th,td{padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;border-bottom:1px solid var(--border);vertical-align:middle}
 th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;position:sticky;top:0}
 /* 固定每列百分比宽度，保证各列始终对齐在同一条竖线上 */
-th:nth-child(1),td:nth-child(1){width:13%;text-align:left}
-th:nth-child(2),td:nth-child(2){width:7%}
-th:nth-child(3),td:nth-child(3){width:7%}
-th:nth-child(4),td:nth-child(4){width:7%}
-th:nth-child(5),td:nth-child(5){width:8%}
-th:nth-child(6),td:nth-child(6){width:9%}
-th:nth-child(7),td:nth-child(7){width:9%}
+th:nth-child(1),td:nth-child(1){width:12%;text-align:left}
+th:nth-child(2),td:nth-child(2){width:6%}
+th:nth-child(3),td:nth-child(3){width:6%}
+th:nth-child(4),td:nth-child(4){width:6%}
+th:nth-child(5),td:nth-child(5){width:6%}
+th:nth-child(6),td:nth-child(6){width:7%}
+th:nth-child(7),td:nth-child(7){width:8%}
 th:nth-child(8),td:nth-child(8){width:8%}
 th:nth-child(9),td:nth-child(9){width:8%}
-th:nth-child(10),td:nth-child(10){width:9%;white-space:normal}
-th:nth-child(11),td:nth-child(11){width:15%;white-space:normal;text-align:left}
+th:nth-child(10),td:nth-child(10){width:8%}
+th:nth-child(11),td:nth-child(11){width:8%;white-space:normal}
+th:nth-child(12),td:nth-child(12){width:9%;white-space:normal;text-align:left}
+th:nth-child(13),td:nth-child(13){width:8%;white-space:normal;text-align:left}
 .table-wrap{overflow-x:auto;border-radius:12px;margin-bottom:8px}
 tbody tr:hover{background:var(--panel2)}
 tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
@@ -222,6 +224,29 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 .mnote{font-size:12px;color:var(--red);margin-top:8px;display:none}
 #toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none}
 
+/* ===== 总投资金额 + 仓位占比 + 仓库管理提醒 ===== */
+.inv-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:10px 14px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+.inv-bar label{font-size:13px;color:var(--muted);font-weight:600}
+.inv-bar input{width:170px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 10px;font-size:13px;outline:none}
+.inv-bar input:focus{border-color:var(--accent)}
+.inv-bar .inv-hint{font-size:12px;color:var(--muted)}
+.inv-bar .inv-hint b{color:var(--accent)}
+.wbar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-bottom:3px}
+.wbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--blue))}
+.wpct{font-variant-numeric:tabular-nums;font-weight:600}
+.repobadge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px}
+.repobadge.ok{background:rgba(27,191,114,.15);color:var(--green)}
+.repobadge.warn{background:rgba(250,173,20,.15);color:var(--amber)}
+.repobadge.danger{background:rgba(255,77,79,.15);color:var(--red)}
+.repo-item{display:flex;align-items:flex-start;gap:8px;background:var(--panel);border-radius:10px;padding:10px 12px;border-left:4px solid var(--muted)}
+.repo-item.ok{border-left-color:var(--green)}
+.repo-item.warn{border-left-color:var(--amber)}
+.repo-item.danger{border-left-color:var(--red)}
+.repo-item .ic{font-size:14px;line-height:1.4}
+.repo-item .ct{font-size:13px;line-height:1.5}
+.repo-item .ct .sub{color:var(--muted);font-size:12px;margin-top:2px}
+.repo-item .ct code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px}
+
 /* ===== 手机端适配（<880px）：可读性 + 美观 ===== */
 @media(max-width:880px){
   body{padding:12px 12px 36px;font-size:15px}
@@ -268,10 +293,11 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
   #tbody td:nth-child(6)::before{content:"浮盈%"}
   #tbody td:nth-child(7)::before{content:"浮盈额"}
   #tbody td:nth-child(8)::before{content:"市值"}
-  #tbody td:nth-child(9)::before{content:"距支撑位"}
-  #tbody td:nth-child(10)::before{content:"距压力位"}
-  #tbody td:nth-child(11)::before{content:"意图"}
-  #tbody td:nth-child(12)::before{content:"状态"}
+  #tbody td:nth-child(9)::before{content:"仓位占比"}
+  #tbody td:nth-child(10)::before{content:"距支撑位"}
+  #tbody td:nth-child(11)::before{content:"距压力位"}
+  #tbody td:nth-child(12)::before{content:"意图"}
+  #tbody td:nth-child(13)::before{content:"状态"}
   /* 名称列作为卡片头 */
   #tbody td:nth-child(1),#fundTbody td:nth-child(1){
     display:block;background:var(--panel2);padding:12px 14px}
@@ -327,6 +353,36 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
   /* K线弹窗段按钮换行 */
   .kseg{flex-wrap:wrap}
 }
+/* ===== 总持仓资产卡片 ===== */
+.total-asset-card{background:linear-gradient(135deg,#1b2742,#13203c);border:1px solid #2b3c5e;border-radius:14px;padding:16px 20px;margin-bottom:14px;color:#eaf1fb;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.total-asset-card .ta-label{font-size:12.5px;color:#9fb3d1;letter-spacing:.3px}
+.total-asset-card .ta-value{font-size:32px;font-weight:800;line-height:1.15;margin-top:2px}
+.total-asset-card .ta-value .cny{font-size:17px;color:#74c0ff;margin-right:3px;vertical-align:3px}
+.total-asset-card .ta-pos-pct{font-size:13px;margin-top:4px;color:#9fb3d1}
+.total-asset-card .ta-pos-pct b{font-size:15px;color:#fff;font-weight:700}
+.total-asset-card .ta-pos-pct .inv{color:#8b949e}
+.total-asset-card .ta-sub{margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:#c4d2e6}
+.total-asset-card .ta-sub b{color:#fff;font-weight:700}
+.total-asset-card .ta-sub .lag{color:#ffb454}
+.total-asset-card .ta-sub .up{color:#ff7a7a}
+.total-asset-card .ta-sub .down{color:#5fd38a}
+.split-bar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin-top:11px;background:#22304d}
+.split-bar .seg-stock{background:linear-gradient(90deg,#3f8cff,#6fb0ff)}
+.split-bar .seg-fund{background:linear-gradient(90deg,#ffb454,#ffd089)}
+.split-legend{display:flex;gap:18px;margin-top:7px;font-size:11.5px;color:#9fb0c6}
+.split-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.fund-detail{margin-top:12px;border:1px solid #243450;border-radius:10px;background:#0f1830}
+.fund-detail>summary{cursor:pointer;padding:9px 14px;font-size:12.5px;color:#cdd9ec;user-select:none;list-style:none}
+.fund-detail>summary::-webkit-details-marker{display:none}
+.fund-detail>summary:hover{color:#fff}
+.fund-detail .fd-list{max-height:340px;overflow:auto;padding:2px 6px 6px}
+.fund-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid #172339;font-size:12px}
+.fund-row:last-child{border-bottom:0}
+.fund-row .fn{flex:1;color:#dbe6f5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fund-row .fplat{font-size:10.5px;color:#9bd;padding:1px 6px;border-radius:6px;background:#16233c;white-space:nowrap}
+.fund-row .fmv{width:88px;text-align:right;color:#eaf1fb}
+.fund-row .fw{width:60px;text-align:right;color:#9fd0ff}
+.fund-row.hi .fw{color:#ffd089;font-weight:700}
 </style>
 </head>
 <body>
@@ -353,6 +409,24 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
 </header>
 <div id="holdStale" class="gap-banner"></div>
 
+<!-- 总持仓资产卡片（股票 + 基金） -->
+<div class="total-asset-card">
+  <div class="ta-label">总持仓市值（股票 + 基金）</div>
+  <div class="ta-value"><span class="cny">¥</span><span id="taTotal">--</span></div>
+  <div class="ta-pos-pct">当前总仓位 <b id="taPosPct">--</b><span id="taPosHint" class="inv"></span></div>
+  <div class="ta-sub">
+    <span>📈 股票 <b id="taStock">--</b> <span id="taStockPct"></span></span>
+    <span>🐔 基金 <b id="taFund">--</b> <span id="taFundPct"></span></span>
+    <span class="lag">基金净值截至 <span id="taFundNav">--</span></span>
+  </div>
+  <div class="split-bar"><div class="seg-stock" id="segStock" style="width:0%"></div><div class="seg-fund" id="segFund" style="width:0%"></div></div>
+  <div class="split-legend"><span><i style="background:#6fb0ff"></i>股票</span><span><i style="background:#ffb454"></i>基金</span></div>
+  <details class="fund-detail">
+    <summary>🐔 各基金具体仓位（点击展开，共 <span id="fdCount">0</span> 只 · 按仓位降序）</summary>
+    <div class="fd-list" id="fdList"></div>
+  </details>
+</div>
+
 <section class="overview">
   <div class="stat"><div class="label">组合总市值</div><div class="value" id="ovValue">--</div><div class="sub" id="ovValueSub">&nbsp;</div></div>
   <div class="stat"><div class="label">总浮盈亏</div><div class="value" id="ovPnl">--</div><div class="sub" id="ovPnlSub">&nbsp;</div></div>
@@ -360,6 +434,12 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
   <div class="stat"><div class="label">风险标的数</div><div class="value" id="ovRisk">--</div><div class="sub" id="ovRiskSub">&nbsp;</div></div>
   <div class="stat"><div class="label">已实现盈亏</div><div class="value" id="ovRealized">--</div><div class="sub" id="ovRealizedSub">卖出累计</div></div>
 </section>
+
+<div class="inv-bar">
+  <label>总投资金额</label>
+  <input id="totalInvest" type="number" min="0" step="1000" placeholder="输入实际总投资" oninput="onTotalInvestInput()" onchange="onTotalInvestInput()">
+  <span class="inv-hint" id="invHint"></span>
+</div>
 
 <div class="panel-title">风险与异动</div>
 <section class="risk" id="riskPanel"></section>
@@ -379,6 +459,7 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
       <th class="sortable" data-sort="pnlPct" onclick="sortBy('pnlPct')">浮盈%<span class="arr"></span></th>
       <th class="sortable" data-sort="pnl" onclick="sortBy('pnl')">浮盈额<span class="arr"></span></th>
       <th class="sortable" data-sort="mv" onclick="sortBy('mv')">市值<span class="arr"></span></th>
+      <th class="sortable" data-sort="weight" onclick="sortBy('weight')">仓位占比<span class="arr"></span></th>
       <th class="sortable" data-sort="distSL" onclick="sortBy('distSL')">距支撑位<span class="arr"></span></th>
       <th class="sortable" data-sort="distTP" onclick="sortBy('distTP')">距压力位<span class="arr"></span></th>
       <th class="sortable" data-sort="intent" onclick="sortBy('intent')">意图<span class="arr"></span></th>
@@ -387,6 +468,9 @@ footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
     <tbody id="tbody"></tbody>
   </table>
 </section>
+
+<div class="panel-title">🗃️ 仓库管理提醒 <span class="repobadge" id="repoBadge"></span></div>
+<section class="risk" id="repoPanel"></section>
 </div>
 
 <!-- ===== Tab 2: Market ===== -->
@@ -570,6 +654,7 @@ function loadCurve(){
 function renderCurve(d){
   const s=d.series; if(!s||!s.length) return;
   const last=s[s.length-1];
+  // 缺口标注：抓取失败退回快照兜底的标的
   const gapEl=document.getElementById('curveGap');
   if(d.gaps && d.gaps.length){
     const names=d.gaps.map(g=>g.name+'('+g.code+')').join('、');
@@ -664,6 +749,12 @@ const fmtRaw=(n,s,d=null)=> (s!=null&&String(s)!=='')?String(s):(n==null||isNaN(
 const fmtNavDate=(s)=>{ if(!s)return ''; const m=/(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); return m?parseInt(m[2],10)+'/'+parseInt(m[3],10):s; };
 const cls=(n)=> n>0?'up':(n<0?'down':'flat');
 const sign=(n)=> n>0?'+':'';
+// 距支撑/压力位单元格：百分比 + 具体价位（支撑¥X / 压力¥X）
+const distCell=(pct,level,label)=>{
+  if(pct==null||isNaN(pct)) return '<span class="flat">未设</span>';
+  const lv = level==null?'':(' <span style="opacity:.7">'+label+'¥'+fmt(level,2)+'</span>');
+  return '<span class="'+cls(pct)+'">'+sign(pct)+fmt(pct,2)+'%'+lv+'</span>';
+};
 
 // API base - try localhost proxy
 const API='http://localhost:8801';
@@ -723,6 +814,7 @@ function mapPositionToHolding(p){
 async function reloadHoldingsFromJson(){
   try{
     const j=await fetch('/positions.json',{cache:'no-store'}).then(r=>r.json());
+    POS_META=(j&&j.metadata)||null;
     if(j&&Array.isArray(j.positions)&&j.positions.length){
       HOLDINGS.length=0;
       j.positions.forEach(p=>HOLDINGS.push(mapPositionToHolding(p)));
@@ -731,10 +823,12 @@ async function reloadHoldingsFromJson(){
   }catch(e){ console.warn('[holdings] positions.json 载入失败，回退内置兜底数据', e); }
 }
 
+let FUNDS_META=null;
 // 养鸡场单一数据源：funds.json 优先，内置 FUNDS 数组兜底（消除内联/JSON 双写分歧）
 async function reloadFundsFromJson(){
   try{
     const j=await fetch('/funds.json',{cache:'no-store'}).then(r=>r.json());
+    FUNDS_META=(j&&j.metadata)||null;
     if(j&&Array.isArray(j.funds)&&j.funds.length){
       FUNDS.length=0;
       j.funds.forEach(f=>FUNDS.push(f));
@@ -801,7 +895,7 @@ function renderConcentration(){
   if(total<=0){panel.innerHTML='';return;}
   const byCat={};
   HOLDINGS.forEach(h=>{const cat=h.category||h.intent||'其他';byCat[cat]=(byCat[cat]||0)+mv(h);});
-  const TECH=['芯片','半导体','科创','通信','消费'];
+  const TECH=['芯片','半导体','科创','通信','中韩半导体'];
   let techMV=0; HOLDINGS.forEach(h=>{if(TECH.some(k=>(h.name||'').includes(k)))techMV+=mv(h);});
   const techPct=techMV/total*100;
   const over=v=>v/total>0.4;
@@ -824,6 +918,8 @@ function renderConcentration(){
 }
 
 let sortKey=null, sortDir='desc', lastHoldingsOK=false;
+let TOTAL_INVEST=(function(){const v=parseFloat(localStorage.getItem('wb_total_invest'));return (isFinite(v)&&v>0)?v:null;})();
+let POS_META=null;
 function statusRank(h){
   if(!h.alerts||!h.alerts.length)return 3;
   const m={danger:0,warn:1,break:2};
@@ -853,6 +949,117 @@ function updateArrows(){
     if(arr) arr.textContent = (k===sortKey)?(sortDir==='desc'?'▼':'▲'):'';
   });
 }
+// ===== 总投资金额（前端输入，localStorage 持久化）=====
+function onTotalInvestInput(){
+  const el=document.getElementById('totalInvest');
+  const v=parseFloat(el&&el.value);
+  TOTAL_INVEST=(isFinite(v)&&v>0)?v:null;
+  if(TOTAL_INVEST) localStorage.setItem('wb_total_invest',String(TOTAL_INVEST));
+  else localStorage.removeItem('wb_total_invest');
+  updateInvestHint();
+  renderHoldings(lastHoldingsOK);
+  renderConcentration();
+}
+function updateInvestHint(){
+  const el=document.getElementById('invHint'); if(!el)return;
+  if(TOTAL_INVEST){
+    el.innerHTML='已按总投资 <b>¥'+fmt(TOTAL_INVEST,0)+'</b> 计算仓位占比（单层市值 ÷ 总投资）。';
+  }else{
+    el.innerHTML='未输入，已按组合市值 <b>¥'+fmt(window._totVal||0,0)+'</b> 估算（输入实际总投资可换算真实仓位）。';
+  }
+}
+function initInvestInput(){
+  const el=document.getElementById('totalInvest');
+  if(el&&TOTAL_INVEST) el.value=TOTAL_INVEST;
+  updateInvestHint();
+}
+
+// ===== 仓库管理提醒框 =====
+function renderRepoManage(){
+  const panel=document.getElementById('repoPanel'); if(!panel)return;
+  const badge=document.getElementById('repoBadge');
+  const mv=h=>(h.price||h.snap||0)*(h.shares||0);
+  const total=HOLDINGS.reduce((s,h)=>s+mv(h),0);
+  const items=[]; let worst=0;
+  if(lastHoldingsOK){
+    items.push({lvl:'ok',ic:'✅',t:'<b>实时行情已刷新</b>',s:'腾讯直连/本地代理正常，持仓估值为盘中实时价。'});
+  }else{
+    worst=2;
+    items.push({lvl:'danger',ic:'⚠️',t:'<b>实时行情获取失败</b>',s:'当前显示为最后一次成功价或存档快照，<b>非实时</b>，请勿据此交易。点「立即刷新」重试。'});
+  }
+  const noSL=HOLDINGS.filter(h=>!(h.sl>0));
+  const noTP=HOLDINGS.filter(h=>h.tp==null);
+  if(noSL.length||noTP.length){
+    worst=Math.max(worst,1);
+    const parts=[];
+    if(noSL.length)parts.push(noSL.length+' 只未设<b>止损位</b>（'+noSL.map(h=>h.code).join('、')+'）');
+    if(noTP.length)parts.push(noTP.length+' 只未设<b>压力位</b>（'+noTP.map(h=>h.code).join('、')+'）');
+    items.push({lvl:'warn',ic:'📌',t:'<b>风控位缺失</b>',s:parts.join('；')+'。建议补齐 stop_loss / take_profit 以激活风险监护。'});
+  }else{
+    items.push({lvl:'ok',ic:'✅',t:'<b>风控位齐全</b>',s:'全部持仓均已设止损压力位。'});
+  }
+  if(POS_META&&POS_META.snapshot_date){
+    let d=0; try{ const snap=new Date(POS_META.snapshot_date.replace(/-/g,'/')); d=Math.floor((new Date()-snap)/86400000); }catch(e){}
+    if(d>=2){ worst=Math.max(worst,1);
+      items.push({lvl:'warn',ic:'📅',t:'<b>持仓快照滞后</b>',s:'snapshot_date 为 <code>'+POS_META.snapshot_date+'</code>，已 '+d+' 天未更新。新交易/分红后请刷新 positions.json。'});
+    }else{ items.push({lvl:'ok',ic:'✅',t:'<b>持仓快照较新</b>',s:'snapshot_date <code>'+POS_META.snapshot_date+'</code>。'}); }
+  }
+  items.push({lvl:'ok',ic:'💾',t:'<b>持仓录入请同步后端</b>',s:'「录入仓位/卖出/调整」后点「🔄 同步到后端」写回 positions.json，否则刷新即丢。'});
+  items.push({lvl:'ok',ic:'🚀',t:'<b>对外发布需同步版本</b>',s:'改动若需对外（GitHub/SkillHub），记得 bump 版本并同步，脱敏版不含量化持仓。'});
+  panel.innerHTML=items.map(it=>'<div class="repo-item '+it.lvl+'"><span class="ic">'+it.ic+'</span><div class="ct">'+it.t+'<div class="sub">'+it.s+'</div></div></div>').join('');
+  if(badge){
+    if(worst===2){badge.className='repobadge danger';badge.textContent='需处理';}
+    else if(worst===1){badge.className='repobadge warn';badge.textContent='建议检查';}
+    else{badge.className='repobadge ok';badge.textContent='正常';}
+  }
+}
+
+// ===== 总持仓资产卡片（股票 + 基金）=====
+function renderTotalAsset(){
+  const elTot=document.getElementById('taTotal');
+  if(!elTot) return;
+  const stockMV = window._totVal||0;
+  // 基金逐只市值 = shares * snap（净值快照，滞后；标注 nav_date）
+  const fundRows = FUNDS.map(f=>({
+    code:f.code, name:f.name, source:f.source||'', type:f.type||'',
+    mv:(parseFloat(f.shares)||0)*(parseFloat(f.snap)||0)
+  })).filter(x=>x.mv>0);
+  const fundMV = fundRows.reduce((s,x)=>s+x.mv,0);
+  const total = stockMV + fundMV;
+  // 醒目总额
+  elTot.textContent = fmt(total,0);
+  // 当前总仓位（相对于总投资金额）
+  const posPct = (TOTAL_INVEST && TOTAL_INVEST > 0) ? (total / TOTAL_INVEST * 100) : null;
+  document.getElementById('taPosPct').textContent = posPct != null ? fmt(posPct,1)+'%' : '--';
+  document.getElementById('taPosHint').textContent = posPct != null
+    ? '（基于总投资 ¥'+fmt(TOTAL_INVEST,0)+'，剩余 '+fmt(Math.max(0,100-posPct),1)+'% 为现金/未配置）'
+    : '（未输入总投资金额，请在下方「总投资金额」输入后计算）';
+  // 股票 / 基金 占比
+  const sp = total>0? stockMV/total*100:0;
+  const fp = total>0? fundMV/total*100:0;
+  document.getElementById('taStock').textContent = '¥'+fmt(stockMV,0);
+  document.getElementById('taFund').textContent = '¥'+fmt(fundMV,0);
+  document.getElementById('taStockPct').innerHTML = '<span style="color:#9fd0ff">'+fmt(sp,1)+'%</span>';
+  document.getElementById('taFundPct').innerHTML = '<span style="color:#ffd089">'+fmt(fp,1)+'%</span>';
+  document.getElementById('segStock').style.width = sp.toFixed(2)+'%';
+  document.getElementById('segFund').style.width = fp.toFixed(2)+'%';
+  // 基金净值日期
+  const navDate = (FUNDS_META&&FUNDS_META.nav_date)?FUNDS_META.nav_date:'未知';
+  document.getElementById('taFundNav').textContent = navDate;
+  // 基金明细列表（按仓位降序）
+  fundRows.sort((a,b)=>b.mv-a.mv);
+  document.getElementById('fdCount').textContent = fundRows.length;
+  const list = document.getElementById('fdList');
+  list.innerHTML = fundRows.map(x=>{
+    const w = total>0? x.mv/total*100:0;
+    const big = w>=2?' hi':'';
+    const plat = x.source? '<span class="fplat">'+x.source+'</span>':'';
+    return '<div class="fund-row'+big+'"><span class="fn">'+x.name+'</span>'+plat+
+           '<span class="fmv">¥'+fmt(x.mv,0)+'</span>'+
+           '<span class="fw">'+fmt(w,1)+'%</span></div>';
+  }).join('');
+}
+
 function renderHoldings(ok){
   let totVal=0,totPnl=0,dayVal=0,dayBase=0,riskCount=0;
   HOLDINGS.forEach(h=>{
@@ -860,7 +1067,7 @@ function renderHoldings(ok){
     const costPool=(h._costPool!=null)?h._costPool:(h.cost*(h.shares||0));
     h.pnl=h.price*h.shares - costPool;
     h.pnlPct = costPool>0 ? h.pnl/costPool*100 : 0;
-    h.distSL=(h.price-h.sl)/h.sl*100;
+    h.distSL=(h.sl!=null&&h.sl>0)?(h.price-h.sl)/h.sl*100:null;
     h.distTP=h.tp!=null?(h.price-h.tp)/h.tp*100:null;
     totVal+=h.mv;totPnl+=h.pnl;dayVal+=(h.price-h.prevClose)*h.shares;dayBase+=h.prevClose*h.shares;
     h.alerts=[];
@@ -872,6 +1079,11 @@ function renderHoldings(ok){
     }
     if(h.alerts.length)riskCount++;
   });
+
+  // 仓位占比：单层市值 ÷ 总投资金额（前端输入，默认组合市值）
+  const investBase=(TOTAL_INVEST&&TOTAL_INVEST>0)?TOTAL_INVEST:totVal;
+  HOLDINGS.forEach(h=>{ h.weight = investBase>0 ? h.mv/investBase : 0; });
+  window._totVal=totVal;
 
   // Overview
   document.getElementById('ovValue').textContent='¥'+fmt(totVal,0);
@@ -894,8 +1106,8 @@ function renderHoldings(ok){
     const order={danger:0,warn:1,break:2};
     alerts.sort((x,y)=>order[x.a.lvl]-order[y.a.lvl]);
     rp.innerHTML=alerts.map(({h,a})=>{
-      const extra=a.lvl==='warn'||a.lvl==='danger'?('距支撑位 '+fmt(h.distSL,2)+'%'):
-                  (h.distTP!=null?(h.distTP>=0?('突破压力位 '+fmt(h.distTP,2)+'%'):('低于压力位 '+fmt(-h.distTP,2)+'%')):'');
+      const extra=a.lvl==='warn'||a.lvl==='danger'?('距支撑位 '+fmt(h.distSL,2)+'% (支撑¥'+fmt(h.sl,2)+')'):
+                  (h.distTP!=null?(h.distTP>=0?('突破压力位 '+fmt(h.distTP,2)+'% (压力¥'+fmt(h.tp,2)+')'):('低于压力位 '+fmt(-h.distTP,2)+'% (压力¥'+fmt(h.tp,2)+')')):'');
       const note=(/压力位/.test(a.txt)&&/不卖/.test(h.intent))?'· 你计划持有，仅提示':'';
       return '<div class="alert '+a.lvl+'"><div class="tag">'+a.txt+'</div>'+
              '<div class="body">'+h.name+' <span class="code">'+h.code+'</span> '+extra+' '+note+'</div></div>';
@@ -905,8 +1117,7 @@ function renderHoldings(ok){
   // Table (可排序)
   const rows = sortKey ? HOLDINGS.slice().sort(cmpHoldings) : HOLDINGS;
   document.getElementById('tbody').innerHTML=rows.map(h=>{
-    const tpCell=h.tp==null?'<span class="flat">已取消</span>':
-      '<span class="'+cls(h.distTP)+'">'+sign(h.distTP)+fmt(h.distTP,2)+'%</span>';
+    const tpCell=h.tp==null?'<span class="flat">已取消</span>':distCell(h.distTP,h.tp,'压力');
     let statusPill='<span class="pill hold">持有</span>';
     if(h.alerts.length){
       const a=h.alerts[0];
@@ -930,11 +1141,17 @@ function renderHoldings(ok){
       '<td class="'+cls(h.pnlPct)+'">'+sign(h.pnlPct)+fmt(h.pnlPct,2)+'%</td>'+
       '<td class="'+cls(h.pnl)+'">'+sign(h.pnl)+'¥'+fmt(Math.abs(h.pnl),0)+'</td>'+
       '<td>¥'+fmt(h.mv,0)+'</td>'+
-      '<td class="'+cls(h.distSL)+'">'+sign(h.distSL)+fmt(h.distSL,2)+'%</td>'+
+      '<td><div class="wbar"><i style="width:'+Math.min(100,h.weight*100).toFixed(1)+'%"></i></div><span class="wpct">'+fmt(h.weight*100,1)+'%</span></td>'+
+      '<td>'+distCell(h.distSL,h.sl,'支撑')+'</td>'+
       '<td>'+tpCell+'</td>'+
       '<td style="text-align:left">'+intentPill+'</td>'+
       '<td style="text-align:left">'+statusPill+'</td></tr>';
   }).join('');
+
+  // 仓库管理提醒 + 总投资提示
+  renderRepoManage();
+  updateInvestHint();
+  renderTotalAsset();
 
   // Status
   const st=document.getElementById('status');
@@ -1728,6 +1945,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeFundAdd();clos
   await reloadHoldingsFromJson();   // 单一数据源：positions.json 优先，内置数组兜底
   initHoldingRuntime();
   renderHoldings(false);
+  initInvestInput();
   refreshHoldings();
 })();
 setInterval(refreshHoldings,60000);
@@ -1740,6 +1958,7 @@ setInterval(refreshMarket,60000);
   await reloadFundsFromJson();   // 单一数据源：funds.json 优先，内置数组兜底
   applyFundOverlays();           // 叠加本地手动录入/调整/赎回
   renderFunds(false);
+  renderTotalAsset();           // 基金载入后刷新总持仓卡片
   refreshFunds();
 })();
 setInterval(refreshFunds,60000);
@@ -1777,9 +1996,9 @@ loadLedger();
       <div class="fld"><label>市场</label>
         <select id="aMarket"><option value="sh">上交所 sh</option><option value="sz">深交所 sz</option><option value="bj">北交所 bj</option></select>
       </div>
-      <div class="fld"><label>代码（不含前缀）</label><input id="aCode" placeholder="如 510300 / 588000" /></div>
+      <div class="fld"><label>代码（不含前缀）</label><input id="aCode" placeholder="如 600900 / 588080" /></div>
     </div>
-    <div class="fld"><label>名称</label><input id="aName" placeholder="如 贵州茅台（可留空自动填代码）" /></div>
+    <div class="fld"><label>名称</label><input id="aName" placeholder="如 长江电力（可留空自动填代码）" /></div>
     <div class="row2">
       <div class="fld"><label>数量（股）</label><input id="aShares" type="number" min="1" placeholder="200" /></div>
       <div class="fld"><label>成本价</label><input id="aCost" type="number" step="0.001" min="0" placeholder="27.57" /></div>
